@@ -34,6 +34,8 @@ export class Home implements OnInit {
   topCategories = signal<HomeCategorySummary[]>([]);
   demandCategories = signal<HomeCategorySummary[]>([]);
   topAreas = signal<HomeAreaSummary[]>([]);
+  selectedHomeCategory = signal('cafe');
+  quickMenuExpanded = signal(false);
   hero = signal<HomeHero>({
     province_code: null,
     ward_code: null,
@@ -55,6 +57,33 @@ export class Home implements OnInit {
     return this.wards().filter((ward) => ward.name.toLowerCase().includes(query));
   });
 
+  homeCategoryOptions = computed(() =>
+    this.categories().filter((category) =>
+      ['cafe', 'hotel', 'homestay', 'restaurant', 'travel'].includes(category.id)
+    )
+  );
+
+  collapsedQuickMenuOptions = computed(() => {
+    const selectedId = this.selectedHomeCategory();
+    return this.homeCategoryOptions().filter((category) => category.id !== selectedId);
+  });
+
+  filteredFeaturedPlaces = computed(() =>
+    this.filterPlacesByHomeCategory(this.featuredPlaces())
+  );
+
+  filteredTrendingPlaces = computed(() =>
+    this.filterPlacesByHomeCategory(this.trendingPlaces())
+  );
+
+  filteredNearbyPlaces = computed(() =>
+    this.filterPlacesByHomeCategory(this.nearbyPlaces())
+  );
+
+  filteredRecentViewedPlaces = computed(() =>
+    this.filterPlacesByHomeCategory(this.recentViewedPlaces())
+  );
+
   marqueeCategories = computed(() => {
     const categories = this.topCategories();
     return categories.length ? [...categories, ...categories] : [];
@@ -66,18 +95,27 @@ export class Home implements OnInit {
   });
 
   suggestedPlaces = computed(() =>
-    this.shufflePlaces(this.featuredPlaces().filter((place) => place.rating >= 5)).slice(0, 8),
+    this.shufflePlaces(this.filteredFeaturedPlaces().filter((place) => place.rating >= 4)).slice(0, 8),
   );
 
   displayLocationLabel = computed(() => {
     const city = this.cities().find((item) => item.id === this.dataService.currentCityId());
-    return city?.name ?? 'Hồ Chí Minh';
+    return city?.name ?? 'Ho Chi Minh';
   });
 
   suggestionLocationLabel = computed(() => {
     const wardName = this.dataService.currentWardName().trim();
     return wardName || displayCityLabel(this.displayLocationLabel());
   });
+
+  activeHomeCategory = computed(() => {
+    const selectedId = this.selectedHomeCategory();
+    return this.homeCategoryOptions().find((category) => category.id === selectedId) ?? null;
+  });
+
+  activeHomeCategoryLabel = computed(() => this.activeHomeCategory()?.name ?? 'Ca phe');
+
+  activeHomeCategoryIcon = computed(() => this.activeHomeCategory()?.icon ?? 'fa-mug-hot');
 
   ngOnInit() {
     this.loadData();
@@ -171,10 +209,40 @@ export class Home implements OnInit {
     this.wardDropdownOpen.set(false);
   }
 
+  openQuickMenu() {
+    this.quickMenuExpanded.set(true);
+  }
+
+  closeQuickMenu() {
+    this.quickMenuExpanded.set(false);
+  }
+
+  toggleQuickMenu(event?: Event) {
+    event?.preventDefault();
+    event?.stopPropagation();
+    this.quickMenuExpanded.update((value) => !value);
+  }
+
+  setHomeCategory(categoryId: string) {
+    this.selectedHomeCategory.set(categoryId);
+    this.quickMenuExpanded.set(false);
+  }
+
+  exploreActiveCategory() {
+    this.dataService.selectedCategoryId.set(this.selectedHomeCategory());
+    this.dataService.searchQuery.set('');
+    this.router.navigate(['/discover']);
+  }
+
   onCategoryClick(categoryName: string) {
     this.dataService.selectedCategoryId.set('all');
     this.dataService.searchQuery.set(categoryName);
     this.router.navigate(['/discover']);
+  }
+
+  private filterPlacesByHomeCategory(places: Place[]): Place[] {
+    const categoryId = this.selectedHomeCategory();
+    return places.filter((place) => place.categories.includes(categoryId));
   }
 
   private shufflePlaces(places: Place[]): Place[] {
@@ -191,11 +259,11 @@ export class Home implements OnInit {
   getCategoryIcon(categoryName: string): string {
     const normalized = categoryName.toLowerCase();
 
-    if (normalized.includes('cafe') || normalized.includes('cà phê')) {
+    if (normalized.includes('cafe') || normalized.includes('ca phe')) {
       return 'fa-mug-hot';
     }
 
-    if (normalized.includes('nhà hàng') || normalized.includes('nha hang')) {
+    if (normalized.includes('nha hang') || normalized.includes('restaurant')) {
       return 'fa-utensils';
     }
 
@@ -203,15 +271,15 @@ export class Home implements OnInit {
       return 'fa-martini-glass-citrus';
     }
 
-    if (normalized.includes('trà') || normalized.includes('tea')) {
+    if (normalized.includes('tra') || normalized.includes('tea')) {
       return 'fa-leaf';
     }
 
-    if (normalized.includes('bánh') || normalized.includes('bakery')) {
+    if (normalized.includes('banh') || normalized.includes('bakery')) {
       return 'fa-cake-candles';
     }
 
-    if (normalized.includes('check') || normalized.includes('ảnh') || normalized.includes('art')) {
+    if (normalized.includes('check') || normalized.includes('anh') || normalized.includes('art')) {
       return 'fa-camera-retro';
     }
 
@@ -308,9 +376,9 @@ export class Home implements OnInit {
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(this.toRadians(fromLat)) *
-        Math.cos(this.toRadians(toLat)) *
-        Math.sin(dLng / 2) *
-        Math.sin(dLng / 2);
+      Math.cos(this.toRadians(toLat)) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     return earthRadiusKm * c;
@@ -327,7 +395,7 @@ export class Home implements OnInit {
       .replace(/[\u0300-\u036f]/g, '');
 
     if (normalized.includes('cafe') || normalized.includes('ca phe')) {
-      return 'Cà phê';
+      return 'Quán cà phê';
     }
 
     if (normalized.includes('hen ho') || normalized.includes('date')) {
@@ -368,15 +436,20 @@ function displayCityLabel(cityName: string): string {
   }
 
   if (
-    cityName.toLowerCase().includes('hồ chí minh') ||
-    cityName.toLowerCase().includes('ho chi minh')
+    cityName.toLowerCase().includes('ho chi minh') ||
+    cityName.toLowerCase().includes('ho-chi-minh')
   ) {
     return 'TP. Hồ Chí Minh';
   }
 
-  if (cityName.toLowerCase().includes('hà nội') || cityName.toLowerCase().includes('ha noi')) {
+  if (cityName.toLowerCase().includes('ha noi') || cityName.toLowerCase().includes('ha-noi')) {
     return 'TP. Hà Nội';
   }
 
   return cityName;
 }
+
+
+
+
+

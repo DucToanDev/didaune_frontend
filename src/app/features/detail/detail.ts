@@ -1,7 +1,7 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { Place, PlaceReview } from '../../core/models/app.models';
+import { Place, PlaceAmenityOption, PlaceReview } from '../../core/models/app.models';
 import { DataService } from '../../core/services/data.service';
 
 @Component({
@@ -20,6 +20,41 @@ export class Detail {
   reviews = signal<PlaceReview[]>([]);
   relatedPlaces = signal<Place[]>([]);
   visibleReviewCount = signal(this.initialReviewLimit);
+
+  enabledAmenityOptions = computed(() =>
+    (this.place()?.amenity_options ?? []).filter((item) => item.enabled).slice(0, 12)
+  );
+
+  displayedAmenities = computed<PlaceAmenityOption[]>(() => {
+    const enabled = this.enabledAmenityOptions();
+
+    if (enabled.length) {
+      return enabled;
+    }
+
+    return (this.place()?.amenity_labels ?? []).map((name) => ({ name, enabled: true }));
+  });
+
+  bookingPlatforms = computed(() => (this.place()?.booking_platforms ?? []).slice(0, 4));
+
+  stayFacts = computed(() => {
+    const p = this.place();
+
+    if (!p) {
+      return [];
+    }
+
+    const facts = [
+      p.hotel_stars ? `${p.hotel_stars} sao` : null,
+      p.bedrooms ? `${p.bedrooms} phong ngu` : null,
+      p.beds ? `${p.beds} giuong` : null,
+      p.bathrooms ? `${p.bathrooms} phong tam` : null,
+      p.sleeps ? `${p.sleeps} khach` : null,
+      p.min_nights ? `Toi thieu ${p.min_nights} dem` : null,
+    ].filter((item): item is string => Boolean(item));
+
+    return facts;
+  });
 
   constructor() {
     this.route.params.subscribe((params) => {

@@ -176,3 +176,132 @@
     transform: translateX(calc(-50% - 0.375rem));
   }
 }
+
+#top-menu-right {
+  position: fixed;
+  right: 0;
+  top: 105px;
+  z-index: 99;
+  width: 58px;
+}
+
+#top-menu-right li {
+  display: flex;
+  justify-content: flex-end;
+  list-style: none;
+  margin-bottom: -5px;
+}
+
+#top-menu-right li:not(:first-child) {
+  display: none;
+}
+
+#top-menu-right.expanded li:not(:first-child),
+#top-menu-right:hover li:not(:first-child) {
+  display: flex;
+}
+
+#top-menu-right li a {
+  position: relative;
+  background: #f5f6fa;
+  border-radius: 12px 0 0 12px;
+  box-shadow: 0 0 5px 0 rgb(48 56 70 / 20%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  color: #000;
+  font-size: 13px;
+  width: 58px;
+  min-height: 52px;
+  cursor: pointer;
+  transition: width 180ms ease, background 180ms ease, color 180ms ease;
+}
+
+#top-menu-right i {
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 14px;
+  flex: 0 0 30px;
+}
+
+#top-menu-right i img {
+  border-radius: 50%;
+  height: 24px;
+  width: 24px;
+}
+
+#top-menu-right span {
+  display: none;
+  position: absolute;
+  right: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(15, 23, 42, 0.94);
+  color: #fff;
+  border-radius: 999px;
+  padding: 10px 14px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+#top-menu-right span::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -5px;
+  width: 10px;
+  height: 10px;
+  background: rgba(15, 23, 42, 0.94);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+#top-menu-right li a:hover,
+#top-menu-right li a:focus-visible,
+#top-menu-right li a.active {
+  background: #eef6ff;
+  color: #0c4a6e;
+}
+
+#top-menu-right li a:hover span,
+#top-menu-right li a:focus-visible span,
+#top-menu-right.expanded li a.active span {
+  display: block;
+}
+
+#toggle-menu-button {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.16), rgba(16, 185, 129, 0.12));
+  color: #0c4a6e;
+}
+
+@media screen and (min-width: 1401px) {
+  #top-menu-right {
+    top: 112px;
+    width: 64px;
+  }
+
+  #top-menu-right li a {
+    font-size: 16px;
+    width: 64px;
+    min-height: 58px;
+  }
+
+  #top-menu-right i {
+    margin: 12px 16px;
+  }
+
+  #top-menu-right i img {
+    height: 30px;
+    width: 30px;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  #top-menu-right {
+    display: none;
+  }
+}

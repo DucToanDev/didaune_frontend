@@ -4,10 +4,9 @@ import { DataService } from '../../../core/services/data.service';
 import { Router, RouterModule } from '@angular/router';
 
 interface PrimaryCategoryItem {
-  id: 'cafe' | 'hotel' | 'restaurant' | 'travel';
+  id: 'cafe' | 'hotel' | 'homestay' | 'restaurant' | 'travel';
   label: string;
   icon: string;
-  query: string;
 }
 
 @Component({
@@ -20,15 +19,18 @@ interface PrimaryCategoryItem {
 export class Aside {
   public dataService = inject(DataService);
   private router = inject(Router);
+
   primaryCategories: PrimaryCategoryItem[] = [
-    { id: 'cafe', label: 'Caffe', icon: 'fa-mug-hot', query: 'cafe' },
-    { id: 'hotel', label: 'Hotel / Homestay', icon: 'fa-bed', query: 'hotel homestay' },
-    { id: 'restaurant', label: 'Nhà hàng', icon: 'fa-utensils', query: 'nhà hàng' },
-    { id: 'travel', label: 'Du lịch', icon: 'fa-map', query: 'du lịch' },
+    { id: 'cafe', label: 'Cafe', icon: 'fa-mug-hot' },
+    { id: 'hotel', label: 'Hotel', icon: 'fa-bed' },
+    { id: 'homestay', label: 'Homestay', icon: 'fa-house' },
+    { id: 'restaurant', label: 'Nha hang', icon: 'fa-utensils' },
+    { id: 'travel', label: 'Du lich', icon: 'fa-map-location-dot' },
   ];
 
   onCategoryClick(catId: string) {
     this.dataService.selectedCategoryId.set(catId);
+    this.dataService.searchQuery.set('');
     this.router.navigate(['/discover']);
   }
 
@@ -36,16 +38,8 @@ export class Aside {
     this.dataService.currentDistrictId.set('all');
     this.dataService.selectedAmenityId.set('all');
     this.dataService.sortOption.set('popular');
-
-    if (category.id === 'cafe') {
-      this.dataService.selectedCategoryId.set('cafe');
-      this.dataService.searchQuery.set('');
-      this.router.navigate(['/discover']);
-      return;
-    }
-
-    this.dataService.selectedCategoryId.set('all');
-    this.dataService.searchQuery.set(category.query);
-    this.router.navigate(['/list']);
+    this.dataService.selectedCategoryId.set(category.id);
+    this.dataService.searchQuery.set('');
+    this.router.navigate(['/discover']);
   }
 }

@@ -47,6 +47,7 @@ export interface BackendLocationOwnerPost {
   post_text?: string | null;
   link?: string | null;
   published_at?: string | null;
+  call_to_action?: string | null;
 }
 
 export interface BackendLocationCompetitor {
@@ -61,7 +62,22 @@ export interface BackendLocationCompetitor {
 
 export interface BackendLocationExternalLink {
   link_type: string;
+  title?: string | null;
+  provider?: string | null;
   url: string | null;
+}
+
+export interface BackendLocationAmenity {
+  name?: string | null;
+  enabled?: boolean | null;
+}
+
+export interface BackendLocationBookingPlatform {
+  name?: string | null;
+  price?: string | null;
+  price_with_tax?: string | null;
+  link?: string | null;
+  is_official_website?: boolean | null;
 }
 
 export interface BackendLocation {
@@ -77,6 +93,7 @@ export interface BackendLocation {
   normalized_ward?: string | null;
   rating?: string | number | null;
   reviews_count?: number | null;
+  price?: string | null;
   price_range?: string | null;
   website?: string | null;
   phone?: string | null;
@@ -89,6 +106,21 @@ export interface BackendLocation {
   can_claim?: boolean;
   is_temporarily_closed?: boolean;
   is_permanently_closed?: boolean;
+  hotel_stars?: number | null;
+  sleeps?: number | null;
+  bedrooms?: number | null;
+  beds?: number | null;
+  bathrooms?: number | string | null;
+  min_nights?: number | null;
+  checkin_time?: string | null;
+  checkout_time?: string | null;
+  checkin_date?: string | null;
+  checkout_date?: string | null;
+  closed_on?: string | null;
+  most_popular_times?: string | null;
+  popular_times?: string | null;
+  amenities_json?: BackendLocationAmenity[] | null;
+  booking_platforms_json?: BackendLocationBookingPlatform[] | null;
   raw_payload?: Record<string, unknown> | null;
   hours?: BackendLocationHour[];
   categories?: BackendLocationCategory[];
@@ -115,6 +147,7 @@ export class PlaceMapperService {
       this.readStringArray(rawPayload['categories']);
     const images = [
       ...(location.images?.map((image) => image.image_url) ?? []),
+      ...(this.readImageUrls(rawPayload['featured_images']) ?? []),
       location.featured_image ?? null,
     ].filter((image, imageIndex, array): image is string => Boolean(image) && array.indexOf(image) === imageIndex);
     const gallery = images.map((image, imageIndex) => ({
@@ -125,21 +158,22 @@ export class PlaceMapperService {
       id: review.id,
       place_slug: location.slug,
       source: 'external' as const,
-      user_name: review.reviewer_name ?? 'Khach hang',
+      user_name: review.reviewer_name ?? 'Khách hàng',
       avatar:
         review.reviewer_avatar_url ??
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(review.reviewer_name ?? 'Khach')}&background=e2e8f0&color=0f172a`,
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(review.reviewer_name ?? 'Khách')}&background=e2e8f0&color=0f172a`,
       rating: review.rating ?? 0,
-      comment: review.review_text?.trim() || 'Khach hang chua de lai noi dung.',
+      comment: review.review_text?.trim() || 'Khách hàng chưa để lại nội dung.',
       created_at: review.published_at ?? new Date().toISOString(),
       images: (review.review_images ?? []).map((image) => image.image_url),
       reviewer_profile: review.reviewer_profile ?? null,
       is_local_guide: review.is_local_guide ?? false,
     }));
-    const categoryIds = this.mapCategoriesFromSource(
-      `${location.main_category ?? ''} ${sourceCategories.join(' ')} ${location.description ?? ''}`
-    );
-    const amenityIds = this.mapAmenitiesFromSource(
+    const categorySource = `${location.main_category ?? ''} ${sourceCategories.join(' ')} ${location.description ?? ''}`;
+    const categoryIds = this.mapCategoriesFromSource(categorySource);
+    const amenityOptions = this.readAmenityOptions(location, rawPayload);
+    const amenityIds = this.resolveAmenityIds(
+      amenityOptions,
       `${location.description ?? ''} ${sourceCategories.join(' ')}`
     );
     const reviewCount = location.reviews_count ?? reviews.length;
@@ -162,6 +196,7 @@ export class PlaceMapperService {
     const externalLinks = location.external_links ?? [];
     const reservationsLink =
       externalLinks.find((link) => link.link_type === 'reservation')?.url ?? null;
+    const bookingPlatforms = this.readBookingPlatforms(location, rawPayload);
 
     return {
       id: location.id,
@@ -171,9 +206,9 @@ export class PlaceMapperService {
       area_id: this.slugify(location.ward || location.district || location.city || location.name),
       area_name: location.ward || location.district || location.city || location.name,
       district_id: this.slugify(location.district || location.city || location.name),
-      district_name: location.district || location.city || 'Khac',
-      ward_name: location.ward || location.normalized_ward || location.district || 'Khac',
-      city_name: location.city || 'Khac',
+      district_name: location.district || location.city || 'Khác',
+      ward_name: location.ward || location.normalized_ward || location.district || 'Khác',
+      city_name: location.city || 'Khác',
       address: location.full_address || location.name,
       image:
         images[0] ??
@@ -181,15 +216,31 @@ export class PlaceMapperService {
       gallery,
       rating: Number(location.rating ?? 0) || 0,
       review_count: reviewCount,
+      price: this.normalizePrice(location.price, bookingPlatforms, location.price_range),
       price_range: this.normalizePriceRange(location.price_range),
       categories: categoryIds,
       category_labels: categoryIds.map((categoryId) => this.getCategoryLabel(categoryId)),
       source_categories: sourceCategories,
       amenities: amenityIds,
       amenity_labels: amenityIds.map((amenityId) => this.getAmenityLabel(amenityId)),
+      amenity_options: amenityOptions,
+      booking_platforms: bookingPlatforms,
+      hotel_stars: this.toNumber(location.hotel_stars) ?? null,
+      sleeps: this.toNumber(location.sleeps) ?? null,
+      bedrooms: this.toNumber(location.bedrooms) ?? null,
+      beds: this.toNumber(location.beds) ?? null,
+      bathrooms: this.toNumber(location.bathrooms) ?? null,
+      min_nights: this.toNumber(location.min_nights) ?? null,
+      checkin_time: location.checkin_time ?? this.readString(rawPayload['checkin_time']),
+      checkout_time: location.checkout_time ?? this.readString(rawPayload['checkout_time']),
+      checkin_date: location.checkin_date ?? this.readString(rawPayload['checkin_date']),
+      checkout_date: location.checkout_date ?? this.readString(rawPayload['checkout_date']),
+      closed_on: location.closed_on ?? this.readString(rawPayload['closed_on']),
+      most_popular_times: location.most_popular_times ?? this.readString(rawPayload['most_popular_times']),
+      popular_times: location.popular_times ?? this.readString(rawPayload['popular_times']),
       is_hot: index < hotThreshold || score >= 420,
       is_new: (location.owner_posts?.length ?? 0) > 0,
-      description: this.normalizeDescription(location.description, location.name),
+      description: this.normalizeDescription(location.description, location.name, categoryIds),
       status: this.buildStatus({
         status: null,
         is_temporarily_closed: Boolean(location.is_temporarily_closed),
@@ -212,6 +263,7 @@ export class PlaceMapperService {
         link: post.link ?? null,
         published_at: post.published_at ?? null,
         image: null,
+        call_to_action: post.call_to_action ?? null,
       })),
       competitors: (location.competitors ?? []).slice(0, 4).map((competitor) => ({
         name: competitor.name,
@@ -237,9 +289,25 @@ export class PlaceMapperService {
     amenities: Amenity[]
   ): Place {
     const districtName = this.extractDistrictName(location);
-    const areaName = location.detailed_address?.ward?.trim() || districtName || 'Khu vuc khac';
-    const categoryIds = this.mapCategories(location, categories);
-    const amenityIds = this.mapAmenities(location, amenities);
+    const areaName = location.detailed_address?.ward?.trim() || districtName || 'Khu vực khác';
+    const categorySource = `${location.main_category ?? ''} ${(location.categories ?? []).join(' ')} ${
+      location.description ?? ''
+    }`;
+    const categoryIds = this.inferCategoryIds(
+      categorySource,
+      categories.map((category) => category.id)
+    );
+    const amenityOptions = (location.amenities ?? []).map((item) => ({
+      name: item?.name?.trim() || 'Tiện ích',
+      enabled: Boolean(item?.enabled),
+    }));
+    const amenityIds = this.resolveAmenityIds(
+      amenityOptions,
+      `${location.description ?? ''} ${(location.categories ?? []).join(' ')} ${
+        location.review_keywords?.map((keyword) => keyword.keyword).join(' ') ?? ''
+      }`,
+      amenities
+    );
     const images = [
       ...(location.featured_images ?? []),
       ...(location.images ?? []),
@@ -272,15 +340,37 @@ export class PlaceMapperService {
       gallery,
       rating: location.rating ?? 0,
       review_count: reviewCount,
+      price: this.normalizePrice(location.price, location.booking_platforms ?? [], location.price_range),
       price_range: this.normalizePriceRange(location.price_range),
       categories: categoryIds,
       category_labels: categoryIds.map((categoryId) => this.getCategoryLabel(categoryId)),
       source_categories: location.categories ?? [],
       amenities: amenityIds,
       amenity_labels: amenityIds.map((amenityId) => this.getAmenityLabel(amenityId)),
+      amenity_options: amenityOptions,
+      booking_platforms: (location.booking_platforms ?? []).map((platform) => ({
+        name: platform.name?.trim() || 'Booking',
+        price: platform.price ?? null,
+        price_with_tax: platform.price_with_tax ?? null,
+        link: platform.link ?? null,
+        is_official_website: Boolean(platform.is_official_website),
+      })),
+      hotel_stars: location.hotel_stars ?? null,
+      sleeps: location.sleeps ?? null,
+      bedrooms: location.bedrooms ?? null,
+      beds: location.beds ?? null,
+      bathrooms: location.bathrooms ?? null,
+      min_nights: location.min_nights ?? null,
+      checkin_time: location.checkin_time ?? null,
+      checkout_time: location.checkout_time ?? null,
+      checkin_date: location.checkin_date ?? null,
+      checkout_date: location.checkout_date ?? null,
+      closed_on: location.closed_on ?? null,
+      most_popular_times: location.most_popular_times ?? null,
+      popular_times: location.popular_times ?? null,
       is_hot: index < hotThreshold || score >= 420,
       is_new: (location.owner_posts?.length ?? 0) > 0,
-      description: this.normalizeDescription(location.description, location.name),
+      description: this.normalizeDescription(location.description, location.name, categoryIds),
       status: this.buildStatus(location),
       phone: location.phone ?? null,
       website: location.website ?? null,
@@ -299,6 +389,7 @@ export class PlaceMapperService {
         link: post.link ?? null,
         published_at: post.published_at ?? null,
         image: post.images?.[0] ?? null,
+        call_to_action: this.callToActionLabel(post.call_to_action ?? null),
       })),
       competitors: (location.competitors ?? []).slice(0, 4).map((competitor) => ({
         name: competitor.name,
@@ -339,7 +430,7 @@ export class PlaceMapperService {
           review.avatar_link ??
           `https://ui-avatars.com/api/?name=${encodeURIComponent(review.name)}&background=e2e8f0&color=0f172a`,
         rating: review.rating,
-        comment: review.review_text?.trim() ?? 'Khach hang chua de lai noi dung.',
+        comment: review.review_text?.trim() ?? 'Khách hàng chưa để lại nội dung.',
         created_at: review.published_at_date ?? new Date().toISOString(),
         images: (review.review_photos ?? []).slice(0, 4).map((photo) => photo.url),
         reviewer_profile: review.reviewer_profile ?? null,
@@ -347,110 +438,101 @@ export class PlaceMapperService {
       }));
   }
 
-  private mapCategories(location: ExternalLocation, categories: Category[]): string[] {
-    const source = `${location.main_category ?? ''} ${(location.categories ?? []).join(' ')} ${
-      location.description ?? ''
-    }`.toLowerCase();
-    const categoryIds = new Set<string>(['cafe']);
-
-    if (source.includes('bar') || source.includes('lounge') || source.includes('restaurant')) {
-      categoryIds.add('date');
-      categoryIds.add('group');
-    }
-
-    if (
-      source.includes('art') ||
-      source.includes('view') ||
-      source.includes('dog') ||
-      source.includes('koi') ||
-      source.includes('decor')
-    ) {
-      categoryIds.add('photo');
-    }
-
-    if (
-      source.includes('quiet') ||
-      source.includes('study') ||
-      source.includes('work') ||
-      source.includes('espresso')
-    ) {
-      categoryIds.add('work');
-    }
-
-    if (source.includes('beer') || source.includes('group') || source.includes('pub')) {
-      categoryIds.add('group');
-    }
-
-    if (source.includes('romantic') || source.includes('atmosphere')) {
-      categoryIds.add('date');
-    }
-
-    return categories
-      .map((category) => category.id)
-      .filter((categoryId) => categoryIds.has(categoryId));
+  private mapCategoriesFromSource(source: string): string[] {
+    return this.inferCategoryIds(source, CATEGORY_CONFIG.map((category) => category.id));
   }
 
-  private mapAmenities(location: ExternalLocation, amenities: Amenity[]): string[] {
-    const source = `${location.description ?? ''} ${(location.categories ?? []).join(' ')} ${
-      location.review_keywords?.map((keyword) => keyword.keyword).join(' ') ?? ''
-    }`.toLowerCase();
-    const amenityIds = new Set<string>();
+  private inferCategoryIds(source: string, ids: string[]): string[] {
+    const normalized = this.normalizeSearchText(source);
+    const matches = new Set<string>();
 
-    if (source.includes('wifi')) amenityIds.add('wifi');
-    if (source.includes('quiet') || source.includes('yen tinh') || source.includes('work')) amenityIds.add('quiet');
-    if (source.includes('music') || source.includes('beer') || source.includes('acoustic')) amenityIds.add('music');
-    if (source.includes('outdoor') || source.includes('terrace') || source.includes('koi')) amenityIds.add('outdoor');
-    if (source.includes('parking') || source.includes('airport') || source.includes('car')) amenityIds.add('parking');
-    if (location.hours?.some((hour) => hour.times.some((time) => time.includes('23:00')))) amenityIds.add('late');
+    const primaryCategoryId = this.resolvePrimaryCategory(normalized);
+
+    if (primaryCategoryId) {
+      matches.add(primaryCategoryId);
+    } else {
+      matches.add('travel');
+    }
+
+    if (this.includesAny(normalized, ['romantic', 'date', 'couple', 'hen ho', 'lounge', 'cocktail', 'wine'])) {
+      matches.add('date');
+    }
+
+    if (this.includesAny(normalized, ['group', 'family', 'friends', 'party', 'bbq', 'lau', 'pub', 'beer'])) {
+      matches.add('group');
+    }
+
+    if (this.includesAny(normalized, ['work', 'study', 'cowork', 'wifi', 'quiet', 'yen tinh'])) {
+      matches.add('work');
+    }
+
+    if (this.includesAny(normalized, ['photo', 'check in', 'check-in', 'decor', 'view', 'art', 'studio', 'song ao'])) {
+      matches.add('photo');
+    }
+
+    return ids.filter((id) => matches.has(id));
+  }
+
+  private resolvePrimaryCategory(source: string): string | null {
+    if (this.includesAny(source, ['homestay', 'guest house', 'guesthouse', 'hostel', 'villa', 'bungalow', 'apartment rental', 'apartment', 'rental'])) {
+      return 'homestay';
+    }
+
+    if (this.includesAny(source, ['hotel', 'resort', 'motel', 'lodging'])) {
+      return 'hotel';
+    }
+
+    if (this.includesAny(source, ['restaurant', 'nha hang', 'quan an', 'food', 'eatery', 'bistro', 'buffet'])) {
+      return 'restaurant';
+    }
+
+    if (this.includesAny(source, ['cafe', 'coffee shop', 'coffee', 'ca phe', 'espresso', 'tra sua', 'tea house'])) {
+      return 'cafe';
+    }
+
+    if (this.includesAny(source, ['travel', 'du lich', 'tour', 'attraction', 'tourist', 'museum', 'park', 'beach', 'landmark', 'temple'])) {
+      return 'travel';
+    }
+
+    return null;
+  }
+
+  private includesAny(source: string, keywords: string[]): boolean {
+    return keywords.some((keyword) => source.includes(keyword));
+  }
+
+  private normalizeSearchText(value: string): string {
+    return value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private resolveAmenityIds(
+    amenityOptions: Array<{ name: string; enabled: boolean }>,
+    source: string,
+    amenities: Amenity[] = AMENITY_CONFIG
+  ): string[] {
+    const amenityIds = new Set<string>();
+    const normalizedOptionText = amenityOptions
+      .filter((item) => item.enabled)
+      .map((item) => item.name.toLowerCase())
+      .join(' ');
+    const combinedSource = `${source} ${normalizedOptionText}`.toLowerCase();
+
+    if (combinedSource.includes('wifi')) amenityIds.add('wifi');
+    if (combinedSource.includes('quiet') || combinedSource.includes('yen tinh') || combinedSource.includes('work')) amenityIds.add('quiet');
+    if (combinedSource.includes('music') || combinedSource.includes('beer') || combinedSource.includes('acoustic')) amenityIds.add('music');
+    if (combinedSource.includes('outdoor') || combinedSource.includes('terrace') || combinedSource.includes('koi') || combinedSource.includes('garden')) amenityIds.add('outdoor');
+    if (combinedSource.includes('parking') || combinedSource.includes('airport') || combinedSource.includes('car')) amenityIds.add('parking');
+    if (combinedSource.includes('23:00') || combinedSource.includes('24/7') || combinedSource.includes('24h')) amenityIds.add('late');
 
     return amenities
       .map((amenity) => amenity.id)
       .filter((amenityId) => amenityIds.has(amenityId));
-  }
-
-  private mapCategoriesFromSource(source: string): string[] {
-    return this.mapSourceToIds(source, CATEGORY_CONFIG.map((category) => category.id), true);
-  }
-
-  private mapAmenitiesFromSource(source: string): string[] {
-    return this.mapSourceToIds(source, AMENITY_CONFIG.map((amenity) => amenity.id), false);
-  }
-
-  private mapSourceToIds(source: string, ids: string[], includeCafeDefault: boolean): string[] {
-    const normalized = source.toLowerCase();
-    const matches = new Set<string>(includeCafeDefault ? ['cafe'] : []);
-
-    if (normalized.includes('bar') || normalized.includes('restaurant') || normalized.includes('nha hang')) {
-      matches.add('date');
-      matches.add('group');
-    }
-
-    if (
-      normalized.includes('work') ||
-      normalized.includes('study') ||
-      normalized.includes('quiet') ||
-      normalized.includes('yen tinh')
-    ) {
-      matches.add('work');
-      matches.add('quiet');
-    }
-
-    if (
-      normalized.includes('view') ||
-      normalized.includes('decor') ||
-      normalized.includes('koi') ||
-      normalized.includes('art')
-    ) {
-      matches.add('photo');
-      matches.add('outdoor');
-    }
-
-    if (normalized.includes('wifi')) matches.add('wifi');
-    if (normalized.includes('music')) matches.add('music');
-    if (normalized.includes('parking')) matches.add('parking');
-    if (normalized.includes('23:00')) matches.add('late');
-
-    return ids.filter((id) => matches.has(id));
   }
 
   private buildHighlights(location: ExternalLocation): string[] {
@@ -463,12 +545,28 @@ export class PlaceMapperService {
     return [...new Set(combined)].slice(0, 6);
   }
 
-  private normalizeDescription(description: string | null | undefined, name: string): string {
+  private normalizeDescription(
+    description: string | null | undefined,
+    name: string,
+    categories: string[]
+  ): string {
     if (description?.trim()) {
       return description.trim().replace(/\s+/g, ' ');
     }
 
-    return `${name} la mot dia diem dang duoc cong dong quan tam, phu hop de cafe, hen ho va kham pha khong gian moi.`;
+    if (categories.includes('hotel') || categories.includes('homestay')) {
+      return `${name} là điểm lưu trú đang được nhiều người quan tâm với thông tin giá, tiện ích và lịch trình dễ dàng theo dõi.`;
+    }
+
+    if (categories.includes('restaurant')) {
+      return `${name} là địa điểm ăn uống đang được cộng đồng tìm kiếm nhiều và phù hợp để lên kế hoạch khám phá.`;
+    }
+
+    if (categories.includes('travel')) {
+      return `${name} là điểm du lịch đang được cộng đồng chú ý, phù hợp để khám phá và đưa vào lịch trình.`;
+    }
+
+    return `${name} là một địa điểm đang được cộng đồng quan tâm và có thể đưa vào hành trình khám phá của bạn.`;
   }
 
   private buildStatus(location: {
@@ -476,17 +574,41 @@ export class PlaceMapperService {
     is_temporarily_closed?: boolean;
     is_permanently_closed?: boolean;
   }): string {
-    if (location.is_permanently_closed) return 'Da dong cua';
-    if (location.is_temporarily_closed) return 'Tam dong cua';
-    return location.status?.trim() || 'Dang mo cua';
+    if (location.is_permanently_closed) return 'Đã đóng cửa';
+    if (location.is_temporarily_closed) return 'Tạm đóng cửa';
+    return location.status?.trim() || 'Đang mở cửa';
   }
 
   private normalizePriceRange(priceRange: string | null | undefined): string {
     if (!priceRange?.trim()) {
-      return 'Dang cap nhat';
+      return 'Đang cập nhật';
     }
 
     return priceRange.replace(/N D/g, 'VND').replace(/\s+/g, ' ').trim();
+  }
+
+  private normalizePrice(
+    price: string | null | undefined,
+    bookingPlatforms: Array<{ price?: string | null }> = [],
+    priceRange?: string | null
+  ): string {
+    const direct = this.readString(price);
+
+    if (direct) {
+      return direct;
+    }
+
+    const fromBooking = bookingPlatforms.find((platform) => this.readString(platform.price))?.price;
+
+    if (fromBooking) {
+      return fromBooking;
+    }
+
+    if (priceRange?.trim()) {
+      return this.normalizePriceRange(priceRange);
+    }
+
+    return 'Đang cập nhật';
   }
 
   private extractDistrictName(location: ExternalLocation): string {
@@ -541,6 +663,26 @@ export class PlaceMapperService {
     return value.filter((item): item is string => typeof item === 'string');
   }
 
+  private readImageUrls(value: unknown): string[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .map((item) => {
+        if (typeof item === 'string') {
+          return item;
+        }
+
+        if (item && typeof item === 'object' && typeof (item as { link?: unknown }).link === 'string') {
+          return (item as { link: string }).link;
+        }
+
+        return null;
+      })
+      .filter((item): item is string => Boolean(item));
+  }
+
   private readOwnerName(rawPayload: Record<string, unknown>): string | null {
     const owner = rawPayload['owner'];
 
@@ -552,4 +694,93 @@ export class PlaceMapperService {
       ? ((owner as { name: string }).name ?? null)
       : null;
   }
+
+  private readAmenityOptions(
+    location: BackendLocation,
+    rawPayload: Record<string, unknown>
+  ): Array<{ name: string; enabled: boolean }> {
+    const source = Array.isArray(location.amenities_json)
+      ? location.amenities_json
+      : Array.isArray(rawPayload['amenities'])
+        ? rawPayload['amenities']
+        : [];
+
+    return source
+      .map((item) => {
+        const name = item && typeof item === 'object' && typeof (item as { name?: unknown }).name === 'string'
+          ? (item as { name: string }).name.trim()
+          : '';
+        const enabled = item && typeof item === 'object'
+          ? Boolean((item as { enabled?: unknown }).enabled)
+          : false;
+
+        return {
+          name: name || 'Tiện ích',
+          enabled,
+        };
+      })
+      .filter((item) => Boolean(item.name));
+  }
+
+  private readBookingPlatforms(
+    location: BackendLocation,
+    rawPayload: Record<string, unknown>
+  ): Array<{
+    name: string;
+    price?: string | null;
+    price_with_tax?: string | null;
+    link?: string | null;
+    is_official_website?: boolean;
+  }> {
+    const source = Array.isArray(location.booking_platforms_json)
+      ? location.booking_platforms_json
+      : Array.isArray(rawPayload['booking_platforms'])
+        ? rawPayload['booking_platforms']
+        : [];
+
+    return source.reduce<Array<{ name: string; price?: string | null; price_with_tax?: string | null; link?: string | null; is_official_website?: boolean }>>((platforms, item) => {
+      if (!item || typeof item !== 'object') {
+        return platforms;
+      }
+
+      const platform = item as Record<string, unknown>;
+      platforms.push({
+        name: this.readString(platform['name']) || 'Booking',
+        price: this.readString(platform['price']),
+        price_with_tax: this.readString(platform['price_with_tax']),
+        link: this.readString(platform['link']),
+        is_official_website: Boolean(platform['is_official_website']),
+      });
+
+      return platforms;
+    }, []);
+  }
+
+  private readString(value: unknown): string | null {
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+
+    return null;
+  }
+
+  private callToActionLabel(value: unknown): string | null {
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+
+    if (value && typeof value === 'object') {
+      const text = this.readString((value as { text?: unknown }).text);
+      const link = this.readString((value as { link?: unknown }).link);
+
+      if (text && link) {
+        return `${text} � ${link}`;
+      }
+
+      return text ?? link;
+    }
+
+    return null;
+  }
 }
+

@@ -49,6 +49,7 @@ export interface PlaceOwnerPost {
   link: string | null;
   published_at: string | null;
   image?: string | null;
+  call_to_action?: string | null;
 }
 
 export interface PlaceCompetitor {
@@ -75,6 +76,56 @@ export interface PlaceReview {
   is_local_guide?: boolean;
 }
 
+export interface PlaceAmenityOption {
+  name: string;
+  enabled: boolean;
+}
+
+export interface PlaceBookingPlatform {
+  name: string;
+  price?: string | null;
+  price_with_tax?: string | null;
+  link?: string | null;
+  is_official_website?: boolean;
+}
+
+export interface PlaceItineraryStop {
+  id: number;
+  day_number: number;
+  start_time: string | null;
+  end_time: string | null;
+  activity_title: string;
+  activity_type?: string | null;
+  note: string | null;
+  transport_mode: string | null;
+  estimated_cost: string | null;
+  travel_minutes_from_previous?: number | null;
+  travel_distance_km_from_previous?: string | null;
+  location: Place | null;
+}
+
+export interface PlaceItineraryDay {
+  day_number: number;
+  date: string | null;
+  theme: string | null;
+  summary: string | null;
+  estimated_cost: string | null;
+  travel_minutes: number;
+  travel_distance_km: string | null;
+  items_count: number;
+  items: PlaceItineraryStop[];
+}
+
+export interface PlaceItineraryOverview {
+  trip_style?: string | null;
+  pace?: string | null;
+  companion_type?: string | null;
+  routing_strategy?: string | null;
+  total_estimated_cost?: string | null;
+  total_travel_minutes?: number;
+  total_travel_distance_km?: string | null;
+}
+
 export interface Place {
   id: string;
   name: string;
@@ -91,12 +142,28 @@ export interface Place {
   gallery: PlaceGalleryImage[];
   rating: number;
   review_count: number;
+  price: string;
   price_range: string;
   categories: string[];
   category_labels: string[];
   source_categories: string[];
   amenities: string[];
   amenity_labels: string[];
+  amenity_options: PlaceAmenityOption[];
+  booking_platforms: PlaceBookingPlatform[];
+  hotel_stars?: number | null;
+  sleeps?: number | null;
+  bedrooms?: number | null;
+  beds?: number | null;
+  bathrooms?: number | null;
+  min_nights?: number | null;
+  checkin_time?: string | null;
+  checkout_time?: string | null;
+  checkin_date?: string | null;
+  checkout_date?: string | null;
+  closed_on?: string | null;
+  most_popular_times?: string | null;
+  popular_times?: string | null;
   is_hot: boolean;
   is_new: boolean;
   discount?: string;
@@ -207,6 +274,7 @@ export interface ExternalLocation {
   link?: string | null;
   reviews?: number;
   rating?: number;
+  price?: string | null;
   categories?: string[];
   main_category?: string | null;
   address?: string | null;
@@ -229,6 +297,7 @@ export interface ExternalLocation {
     link?: string | null;
     published_at?: string | null;
     images?: string[];
+    call_to_action?: string | { text?: string; link?: string } | null;
   }>;
   competitors?: Array<{
     name: string;
@@ -242,6 +311,14 @@ export interface ExternalLocation {
     };
   }>;
   hours?: ExternalLocationHour[];
+  amenities?: Array<{ name?: string; enabled?: boolean }> | null;
+  booking_platforms?: Array<{
+    name?: string;
+    price?: string | null;
+    price_with_tax?: string | null;
+    link?: string | null;
+    is_official_website?: boolean;
+  }> | null;
   coordinates?: {
     latitude?: number;
     longitude?: number;
@@ -257,6 +334,20 @@ export interface ExternalLocation {
   reservations?: {
     link?: string | null;
   };
+  hotel_stars?: number | null;
+  sleeps?: number | null;
+  bedrooms?: number | null;
+  beds?: number | null;
+  bathrooms?: number | null;
+  min_nights?: number | null;
+  checkin_date?: string | null;
+  checkout_date?: string | null;
+  checkin_time?: string | null;
+  checkout_time?: string | null;
+  closed_on?: string | null;
+  workday_timing?: string | null;
+  most_popular_times?: string | null;
+  popular_times?: string | null;
   status?: string | null;
   is_temporarily_closed?: boolean;
   is_permanently_closed?: boolean;

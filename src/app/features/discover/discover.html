@@ -1,4 +1,13 @@
 <div class="p-4 lg:p-8 pb-24 md:pb-10 max-w-7xl mx-auto">
+  <section *ngIf="dataService.backendError()" class="mb-6 rounded-[28px] border border-red-200 bg-red-50 px-5 py-4 text-red-700 shadow-sm">
+    <div class="flex items-start gap-3">
+      <i class="fa-solid fa-triangle-exclamation mt-1"></i>
+      <div>
+        <h2 class="text-base font-bold">Đã xảy ra lỗi!!!</h2>
+        <p class="mt-1 text-sm">{{ dataService.backendError() }}</p>
+      </div>
+    </div>
+  </section>
 
   <div class="mb-5 flex items-end justify-between">
       <div>
@@ -143,3 +152,4 @@
     </div>
   </section>
 </div>
+

@@ -27,6 +27,7 @@ export class Home implements OnInit {
   trendingPlaces = signal<Place[]>([]);
   newPlaces = signal<Place[]>([]);
   nearbyPlaces = signal<Place[]>([]);
+  recentViewedPlaces = signal<Place[]>([]);
   categories = signal<Category[]>([]);
   cities = signal<City[]>([]);
   wards = signal<Ward[]>([]);
@@ -87,6 +88,9 @@ export class Home implements OnInit {
 
     this.dataService.getCities().subscribe((data) => this.cities.set(data));
     this.dataService.getCategories().subscribe((data) => this.categories.set(data));
+    this.dataService
+      .getRecentlyViewedPlaces()
+      .subscribe((places) => this.recentViewedPlaces.set(places));
     this.dataService.getWardsByCityId(this.dataService.currentCityId()).subscribe((data) => {
       this.wards.set(data);
       const selectedWard = data.find(

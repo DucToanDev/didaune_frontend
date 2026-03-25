@@ -80,6 +80,7 @@ export class DataService {
   private reviewsStorageKey = 'didaune_reviews';
   private userStorageKey = 'didaune_user';
   private coordinatesStorageKey = 'didaune_coordinates';
+  private recentViewedStorageKey = 'didaune_recent_viewed';
 
   currentCityId = signal('hcm');
   currentDistrictId = signal('all');
@@ -94,12 +95,16 @@ export class DataService {
   );
 
   favoriteSlugs = signal<string[]>(this.readStorage<string[]>(this.favoritesStorageKey, []));
+  recentViewedSlugs = signal<string[]>(this.readStorage<string[]>(this.recentViewedStorageKey, []));
   internalReviews = signal<PlaceReview[]>(
     this.readStorage<PlaceReview[]>(this.reviewsStorageKey, [])
   );
   currentUser = signal<User>(this.readStorage<User>(this.userStorageKey, DEFAULT_USER));
   private favoriteSlugs$ = toObservable(this.favoriteSlugs).pipe(
     startWith(this.favoriteSlugs())
+  );
+  private recentViewedSlugs$ = toObservable(this.recentViewedSlugs).pipe(
+    startWith(this.recentViewedSlugs())
   );
   private internalReviews$ = toObservable(this.internalReviews).pipe(
     startWith(this.internalReviews())
@@ -386,6 +391,30 @@ export class DataService {
     ]).pipe(
       map(([places, favoriteSlugs]) => places.filter((place) => favoriteSlugs.includes(place.slug)))
     );
+  }
+
+  getRecentlyViewedPlaces(limit = 8): Observable<Place[]> {
+    return combineLatest([
+      this.getPlaces(),
+      this.recentViewedSlugs$,
+    ]).pipe(
+      map(([places, recentViewedSlugs]) => {
+        const placeMap = new Map(places.map((place) => [place.slug, place]));
+
+        return recentViewedSlugs
+          .map((slug) => placeMap.get(slug))
+          .filter((place): place is Place => Boolean(place))
+          .slice(0, limit);
+      })
+    );
+  }
+
+  recordRecentlyViewed(place: Place) {
+    const nextSlugs = [place.slug, ...this.recentViewedSlugs().filter((slug) => slug !== place.slug)]
+      .slice(0, 8);
+
+    this.recentViewedSlugs.set(nextSlugs);
+    this.writeStorage(this.recentViewedStorageKey, nextSlugs);
   }
 
   toggleFavorite(slug: string) {

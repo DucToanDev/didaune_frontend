@@ -1,9 +1,8 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-import { Aside } from './shared/ui/aside/aside';
-import { Header } from './shared/ui/header/header';
-import { Tabbar } from './shared/ui/tabbar/tabbar';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { DataService } from './core/services/data.service';
+import { AnalyticsService } from './core/services/analytics.service';
+import { filter, startWith } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -13,11 +12,28 @@ import { DataService } from './core/services/data.service';
 })
 export class App implements OnInit {
   private dataService = inject(DataService);
+  private analytics = inject(AnalyticsService);
+  private router = inject(Router);
   private locationPromptStorageKey = 'didaune_location_prompted';
   protected readonly title = signal('frontend');
 
   ngOnInit(): void {
     this.requestLocationOnEntry();
+    this.trackPageViews();
+  }
+
+  private trackPageViews() {
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        startWith({ urlAfterRedirects: this.router.url } as NavigationEnd)
+      )
+      .subscribe((event) => {
+        this.analytics.trackPageView(
+          event.urlAfterRedirects,
+          typeof document !== 'undefined' ? document.title : undefined
+        );
+      });
   }
 
   private requestLocationOnEntry() {

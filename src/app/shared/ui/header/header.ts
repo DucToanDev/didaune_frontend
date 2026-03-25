@@ -2,7 +2,7 @@ import { Component, computed, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
-import { City, Ward } from '../../../core/models/app.models';
+import { City, Place, Ward } from '../../../core/models/app.models';
 import { AdminAuthService } from '../../../core/services/admin/admin-auth.service';
 import { DataService } from '../../../core/services/data.service';
 import { Router } from '@angular/router';
@@ -24,6 +24,7 @@ export class Header implements OnInit {
   authModalOpen = signal(false);
   authMode = signal<'login' | 'register'>('login');
   mobileSearchOpen = signal(false);
+  desktopSearchOpen = signal(false);
   wardQuery = signal('');
   wardDropdownOpen = signal(false);
   authName = signal('');
@@ -32,6 +33,8 @@ export class Header implements OnInit {
   authConfirmPassword = signal('');
   authError = signal('');
   authSubmitting = signal(false);
+  places = signal<Place[]>([]);
+  recentViewedPlaces = signal<Place[]>([]);
   filteredWards = computed(() => {
     const query = this.wardQuery().trim().toLowerCase();
 
@@ -43,11 +46,59 @@ export class Header implements OnInit {
       ward.name.toLowerCase().includes(query),
     );
   });
+  searchSuggestions = computed(() => {
+    const query = this.dataService.searchQuery().trim().toLowerCase();
+    const recent = this.recentViewedPlaces();
+    const recentSlugs = new Set(recent.map((place) => place.slug));
+    const cityPlaces = this.places()
+      .filter((place) => place.city_id === this.dataService.currentCityId())
+      .sort(
+        (first, second) =>
+          second.review_count - first.review_count || second.rating - first.rating,
+      );
+
+    if (query) {
+      const recentMatches = recent.filter((place) =>
+        this.matchesPlaceQuery(place, query),
+      );
+      const cityMatches = cityPlaces.filter(
+        (place) =>
+          !recentSlugs.has(place.slug) && this.matchesPlaceQuery(place, query),
+      );
+
+      return [...recentMatches, ...cityMatches].slice(0, 10);
+    }
+
+    if (recent.length) {
+      const fallback = cityPlaces.filter((place) => !recentSlugs.has(place.slug));
+      return [...recent.slice(0, 5), ...fallback.slice(0, 5)].slice(0, 10);
+    }
+
+    return cityPlaces.slice(0, 10);
+  });
+  searchSuggestionTitle = computed(() => {
+    const query = this.dataService.searchQuery().trim();
+    const city =
+      this.cities().find((item) => item.id === this.dataService.currentCityId())
+        ?.name ?? 'Hồ Chí Minh';
+
+    if (query) {
+      return `Gợi ý cho "${query}"`;
+    }
+
+    return this.recentViewedPlaces().length
+      ? ''
+      : `Top quán tại ${city}`;
+  });
 
   ngOnInit() {
     this.wardQuery.set(this.dataService.currentWardName());
     this.dataService.getCities().subscribe((data) => this.cities.set(data));
     this.loadWards(this.dataService.currentCityId());
+    this.dataService.getPlaces().subscribe((places) => this.places.set(places));
+    this.dataService
+      .getRecentlyViewedPlaces(5)
+      .subscribe((places) => this.recentViewedPlaces.set(places));
   }
 
   onCityChange(event: any) {
@@ -106,11 +157,32 @@ export class Header implements OnInit {
 
   onSearchChange(event: any) {
     this.dataService.searchQuery.set(event.target.value);
+    this.desktopSearchOpen.set(true);
+  }
+
+  onSearchFocus() {
+    this.desktopSearchOpen.set(true);
+  }
+
+  onSearchBlur() {
+    setTimeout(() => this.desktopSearchOpen.set(false), 150);
   }
 
   onSearchEnter() {
+    const firstSuggestion = this.searchSuggestions()[0];
+
+    if (firstSuggestion && this.dataService.searchQuery().trim()) {
+      this.openSuggestion(firstSuggestion);
+      return;
+    }
+
+    this.desktopSearchOpen.set(false);
     this.mobileSearchOpen.set(false);
     this.router.navigate(['/list']);
+  }
+
+  selectSuggestion(place: Place) {
+    this.openSuggestion(place);
   }
 
   useCurrentLocation() {
@@ -141,6 +213,7 @@ export class Header implements OnInit {
 
   clearSearch() {
     this.dataService.searchQuery.set('');
+    this.desktopSearchOpen.set(false);
   }
 
   handleAvatarClick() {
@@ -260,5 +333,28 @@ export class Header implements OnInit {
         selectedWard?.name ?? this.dataService.currentWardName(),
       );
     });
+  }
+
+  private openSuggestion(place: Place) {
+    this.dataService.searchQuery.set(place.name);
+    this.desktopSearchOpen.set(false);
+    this.mobileSearchOpen.set(false);
+    this.router.navigate(['/detail', place.slug]);
+  }
+
+  private matchesPlaceQuery(place: Place, query: string): boolean {
+    const searchable = [
+      place.name,
+      place.address,
+      place.description,
+      place.district_name,
+      place.ward_name,
+      ...place.category_labels,
+      ...place.highlights,
+    ]
+      .join(' ')
+      .toLowerCase();
+
+    return searchable.includes(query);
   }
 }

@@ -39,6 +39,7 @@ export class Detail {
           return;
         }
 
+        this.dataService.recordRecentlyViewed(place);
         this.dataService.getMergedReviews(place).subscribe((reviews) => this.reviews.set(reviews));
         this.dataService
           .getRelatedPlaces(place)

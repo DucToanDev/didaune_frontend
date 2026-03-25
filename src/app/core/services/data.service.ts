@@ -71,10 +71,8 @@ type StoredReviewDraft = Pick<PlaceReview, 'place_slug' | 'rating' | 'comment' |
 export class DataService {
   private http = inject(HttpClient);
   private locationApi = inject(LocationApiService);
-  private placeMapper = inject(PlaceMapperService);
   private apiBaseUrl = BACKEND_API_CONFIG.baseUrl;
-  private fallbackDataUrl = 'assets/data/db.json';
-  private fallbackExternalDataUrl = 'cafe-in-ho-chi-minh-city-ho-chi-minh-city-vietnam.json';
+
   private provinceApiUrl = 'https://provinces.open-api.vn/api/v2/';
   private favoritesStorageKey = 'didaune_favorites';
   private reviewsStorageKey = 'didaune_reviews';
@@ -100,6 +98,7 @@ export class DataService {
     this.readStorage<PlaceReview[]>(this.reviewsStorageKey, [])
   );
   currentUser = signal<User>(this.readStorage<User>(this.userStorageKey, DEFAULT_USER));
+  backendError = signal<string | null>(null);
   private favoriteSlugs$ = toObservable(this.favoriteSlugs).pipe(
     startWith(this.favoriteSlugs())
   );
@@ -109,12 +108,6 @@ export class DataService {
   private internalReviews$ = toObservable(this.internalReviews).pipe(
     startWith(this.internalReviews())
   );
-
-  private db$ = this.http.get<Database>(this.fallbackDataUrl).pipe(shareReplay(1));
-  private externalLocations$ = this.http
-    .get<ExternalLocation[]>(this.fallbackExternalDataUrl)
-    .pipe(shareReplay(1));
-
   private categories$ = of(CATEGORY_CONFIG).pipe(shareReplay(1));
   private amenities$ = of(AMENITY_CONFIG).pipe(shareReplay(1));
 
@@ -131,64 +124,7 @@ export class DataService {
         })
         .filter((city): city is City => city !== null);
     }),
-    catchError(() => this.db$.pipe(map((db) => db.cities))),
-    shareReplay(1)
-  );
-
-  private fallbackPlaces$ = combineLatest([
-    this.externalLocations$,
-    this.categories$,
-    this.amenities$,
-  ]).pipe(
-    map(([locations, categories, amenities]) =>
-      locations.map((location, index, source) =>
-        this.placeMapper.normalizeExternalLocation(
-          location,
-          index,
-          source.length,
-          categories,
-          amenities
-        )
-      )
-    ),
-    catchError(() =>
-      this.db$.pipe(
-        map((db) =>
-          db.places.map((place) => ({
-            ...place,
-            id: String(place.id),
-            area_id: this.slugify(place.address),
-            area_name: place.address,
-            district_name: place.address,
-            ward_name: '',
-            city_name: db.cities.find((city) => city.id === place.city_id)?.name ?? '',
-            gallery: [{ id: `${place.slug}-cover`, url: place.image }],
-            category_labels: place.categories,
-            source_categories: place.categories,
-            amenity_labels: place.amenities,
-            description: place.name,
-            status: 'Dang mo cua',
-            phone: null,
-            website: null,
-            google_maps_link: null,
-            menu_link: null,
-            reservations_link: null,
-            latitude: undefined,
-            longitude: undefined,
-            distance_km: null,
-            hours: [],
-            highlights: [],
-            owner_name: null,
-            owner_posts: [],
-            competitors: [],
-            reviews: [],
-            can_claim: false,
-            is_temporarily_closed: false,
-            is_permanently_closed: false,
-          }))
-        )
-      )
-    ),
+    catchError(() => of([])),
     shareReplay(1)
   );
 
@@ -198,7 +134,11 @@ export class DataService {
   ]).pipe(
     switchMap(([cityId, wardCode]) =>
       this.locationApi.fetchAllLocations(cityId, wardCode).pipe(
-        catchError(() => this.fallbackPlaces$)
+        tap(() => this.backendError.set(null)),
+        catchError(() => {
+          this.backendError.set('Không kết nối được tới backend. Vui lòng kiểm tra API và thử lại.');
+          return of([] as Place[]);
+        })
       )
     ),
     shareReplay(1)
@@ -225,38 +165,11 @@ export class DataService {
   ]).pipe(
     switchMap(([cityId, wardCode, search, coordinates]) =>
       this.locationApi.fetchHomeData(cityId, wardCode, search, coordinates).pipe(
-        catchError(() =>
-          combineLatest([this.getHotPlaces(), this.getCategories(), this.getAreaOptions()]).pipe(
-            map(([hotPlaces, categories, areas]) => ({
-              hero: {
-                province_code: this.getProvinceCodeByCityId(cityId) ?? null,
-                ward_code: wardCode ? Number(wardCode) : null,
-                total_places: hotPlaces.length,
-                district_count: areas.length,
-                ward_count: 0,
-              },
-              featured_places: hotPlaces.slice(0, 8),
-              trending_places: hotPlaces.slice(0, 8),
-              new_places: hotPlaces.slice(0, 8),
-              nearby_places: hotPlaces.slice(0, 6),
-              demand_categories: categories.slice(0, 5).map((category) => ({
-                id: category.id,
-                name: category.name,
-                icon: category.icon,
-                color: category.color,
-                count: 0,
-              })),
-              top_categories: categories.slice(0, 5).map((category) => ({
-                name: category.name,
-                count: 0,
-              })),
-              top_areas: areas.slice(0, 6).map((area) => ({
-                name: area.name,
-                count: 0,
-              })),
-            }))
-          )
-        )
+        tap(() => this.backendError.set(null)),
+        catchError(() => {
+          this.backendError.set('Không kết nối được tới backend. Vui lòng kiểm tra API và thử lại.');
+          return of(this.createEmptyHomeData(cityId, wardCode));
+        })
       )
     ),
     shareReplay(1)
@@ -265,7 +178,15 @@ export class DataService {
   constructor() {}
 
   getDb(): Observable<Database> {
-    return this.db$;
+    return of({
+      cities: [],
+      districts: [],
+      categories: CATEGORY_CONFIG,
+      amenities: AMENITY_CONFIG,
+      places: [],
+      users: [],
+      reviews: [],
+    });
   }
 
   getPlaces(): Observable<Place[]> {
@@ -334,9 +255,11 @@ export class DataService {
 
   getPlaceBySlug(slug: string): Observable<Place | undefined> {
     return this.locationApi.getPlaceBySlug(slug).pipe(
-      catchError(() =>
-        this.getPlaces().pipe(map((places) => places.find((place) => place.slug === slug)))
-      )
+      tap(() => this.backendError.set(null)),
+      catchError(() => {
+        this.backendError.set('Không kết nối được tới backend. Vui lòng kiểm tra API và thử lại.');
+        return of(undefined);
+      })
     );
   }
 
@@ -606,6 +529,25 @@ export class DataService {
     window.localStorage.setItem(key, JSON.stringify(value));
   }
 
+  private createEmptyHomeData(cityId: string, wardCode: string): HomePageData {
+    return {
+      hero: {
+        province_code: this.getProvinceCodeByCityId(cityId) ?? null,
+        ward_code: wardCode ? Number(wardCode) : null,
+        total_places: 0,
+        district_count: 0,
+        ward_count: 0,
+      },
+      featured_places: [],
+      trending_places: [],
+      new_places: [],
+      nearby_places: [],
+      demand_categories: [],
+      top_categories: [],
+      top_areas: [],
+    };
+  }
+
   private getProvinceCodeByCityId(cityId: string): number | undefined {
     return PROVINCE_MAPPINGS.find((mapping) => mapping.id === cityId)?.provinceCode;
   }
@@ -639,3 +581,7 @@ export class DataService {
     this.refreshFavoritesFromApi();
   }
 }
+
+
+
+

@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { AdminHome } from './admin/admin-home/admin-home';
 import { AdminLocations } from './admin/admin-locations/admin-locations';
+import { AdminPartners } from './admin/admin-partners/admin-partners';
 import { Discover } from './features/discover/discover';
 import { Detail } from './features/detail/detail';
 import { Favorite } from './features/favorite/favorite';
@@ -16,6 +17,7 @@ import { UserShell } from './layout/user-shell';
 export const routes: Routes = [
   { path: 'admin', component: AdminHome, title: 'Admin Dashboard' },
   { path: 'admin/locations', component: AdminLocations, title: 'Admin Locations' },
+  { path: 'admin/partners', component: AdminPartners, title: 'Admin Partners' },
   {
     path: '',
     component: UserShell,

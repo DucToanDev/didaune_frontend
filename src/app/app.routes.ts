@@ -6,7 +6,6 @@ import { Discover } from './features/discover/discover';
 import { Detail } from './features/detail/detail';
 import { Favorite } from './features/favorite/favorite';
 import { Home } from './features/home/home';
-import { List } from './features/list/list';
 import { MapPage } from './features/map-page/map-page';
 import { Planner } from './features/planner/planner';
 import { PartnerRegister } from './features/partner-register/partner-register';
@@ -24,7 +23,7 @@ export const routes: Routes = [
     children: [
       { path: '', component: Home, title: 'Trang chu' },
       { path: 'discover', component: Discover, title: 'Kham pha dia diem' },
-      { path: 'list', component: List, title: 'Ket qua tim kiem' },
+      { path: 'list', redirectTo: 'discover' },
       { path: 'map', component: MapPage, title: 'Ban do dia diem' },
       { path: 'planner', component: Planner, title: 'Len lich trinh AI' },
       { path: 'partner/register', component: PartnerRegister, title: 'Dang ky doi tac' },

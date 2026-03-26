@@ -321,7 +321,7 @@ export class Home implements OnInit {
   onAreaClick(areaName: string) {
     this.dataService.currentDistrictId.set('all');
     this.dataService.searchQuery.set(areaName);
-    this.router.navigate(['/list']);
+    this.router.navigate(['/discover']);
   }
 
   toggleFavorite(event: Event, slug: string) {

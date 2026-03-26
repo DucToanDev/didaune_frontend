@@ -72,6 +72,17 @@ export interface BackendLocationAmenity {
   enabled?: boolean | null;
 }
 
+interface BackendRawPayloadAboutOption {
+  name?: string | null;
+  enabled?: boolean | null;
+}
+
+interface BackendRawPayloadAboutGroup {
+  id?: string | null;
+  name?: string | null;
+  options?: BackendRawPayloadAboutOption[] | null;
+}
+
 export interface BackendLocationBookingPlatform {
   name?: string | null;
   price?: string | null;
@@ -137,6 +148,32 @@ export interface BackendLocation {
   providedIn: 'root',
 })
 export class PlaceMapperService {
+  private readonly travelKeywords = [
+    'travel',
+    'du lich',
+    'tour',
+    'attraction',
+    'tourist',
+    'tourism',
+    'sightseeing',
+    'hop on hop off',
+    'diem thu hut khach du lich',
+    'diem den du lich',
+    'tham quan',
+    'nha dieu hanh du lich',
+    'dai ly du lich',
+    'du lich bang xe buyt',
+    'museum',
+    'bao tang',
+    'park',
+    'beach',
+    'landmark',
+    'temple',
+    'di tich',
+    'diem moc lich su',
+    'heritage',
+  ];
+
   normalizeBackendLocation(
     location: BackendLocation,
     index: number,
@@ -171,8 +208,15 @@ export class PlaceMapperService {
       reviewer_profile: review.reviewer_profile ?? null,
       is_local_guide: review.is_local_guide ?? false,
     }));
-    const categorySource = `${location.name ?? ''} ${location.main_category ?? ''} ${sourceCategories.join(' ')} ${location.description ?? ''}`;
-    const categoryIds = this.mapCategoriesFromBackendLocation(location, rawPayload, categorySource);
+    const primaryCategorySource = `${location.main_category ?? ''} ${sourceCategories.join(' ')}`;
+    const tagCategorySource = `${location.name ?? ''} ${location.description ?? ''} ${primaryCategorySource}`;
+    const categoryIds = this.mapCategoriesFromBackendLocation(
+      location,
+      rawPayload,
+      [location.main_category ?? '', ...sourceCategories],
+      primaryCategorySource,
+      tagCategorySource,
+    );
     const amenityOptions = this.readAmenityOptions(location, rawPayload);
     const amenityIds = this.resolveAmenityIds(
       amenityOptions,
@@ -200,7 +244,7 @@ export class PlaceMapperService {
       externalLinks.find((link) => link.link_type === 'reservation')?.url ?? null;
     const bookingPlatforms = this.readBookingPlatforms(location, rawPayload);
 
-    return {
+    const normalizedPlace: Place = {
       id: location.id,
       name: location.name,
       slug: location.slug,
@@ -282,6 +326,18 @@ export class PlaceMapperService {
       is_temporarily_closed: Boolean(location.is_temporarily_closed),
       is_permanently_closed: Boolean(location.is_permanently_closed),
     };
+
+    if (this.normalizeSearchText(location.name).includes('song anh')) {
+      console.log('[place-mapper][backend]', {
+        name: location.name,
+        main_category: location.main_category,
+        source_categories: sourceCategories,
+        mapped_categories: normalizedPlace.categories,
+        mapped_category_labels: normalizedPlace.category_labels,
+      });
+    }
+
+    return normalizedPlace;
   }
 
   normalizeExternalLocation(
@@ -293,11 +349,12 @@ export class PlaceMapperService {
   ): Place {
     const districtName = this.extractDistrictName(location);
     const areaName = location.detailed_address?.ward?.trim() || districtName || 'Khu vực khác';
-    const categorySource = `${location.main_category ?? ''} ${(location.categories ?? []).join(' ')} ${
-      location.description ?? ''
-    }`;
+    const primaryCategorySource = `${location.main_category ?? ''} ${(location.categories ?? []).join(' ')}`;
+    const tagCategorySource = `${location.name} ${location.description ?? ''} ${primaryCategorySource}`;
     const categoryIds = this.inferCategoryIds(
-      categorySource,
+      [location.main_category ?? '', ...(location.categories ?? [])],
+      primaryCategorySource,
+      tagCategorySource,
       categories.map((category) => category.id)
     );
     const amenityOptions = (location.amenities ?? []).map((item) => ({
@@ -325,7 +382,7 @@ export class PlaceMapperService {
     const score = (location.rating ?? 0) * 100 + reviewCount;
     const hotThreshold = Math.max(3, Math.floor(totalCount * 0.4));
 
-    return {
+    const normalizedPlace: Place = {
       id: location.place_id,
       name: location.name,
       slug: this.slugify(location.name),
@@ -409,6 +466,18 @@ export class PlaceMapperService {
       is_temporarily_closed: Boolean(location.is_temporarily_closed),
       is_permanently_closed: Boolean(location.is_permanently_closed),
     };
+
+    if (this.normalizeSearchText(location.name).includes('song anh')) {
+      console.log('[place-mapper][external]', {
+        name: location.name,
+        main_category: location.main_category,
+        source_categories: location.categories ?? [],
+        mapped_categories: normalizedPlace.categories,
+        mapped_category_labels: normalizedPlace.category_labels,
+      });
+    }
+
+    return normalizedPlace;
   }
 
   private mapExternalReviews(location: ExternalLocation): PlaceReview[] {
@@ -443,20 +512,30 @@ export class PlaceMapperService {
   }
 
   private mapCategoriesFromSource(source: string): string[] {
-    return this.inferCategoryIds(source, CATEGORY_CONFIG.map((category) => category.id));
+    return this.inferCategoryIds(
+      [source],
+      source,
+      source,
+      CATEGORY_CONFIG.map((category) => category.id),
+    );
   }
 
   private mapCategoriesFromBackendLocation(
     location: BackendLocation,
     rawPayload: Record<string, unknown>,
-    source: string
+    primaryLabels: string[],
+    primarySource: string,
+    tagSource: string,
   ): string[] {
-    const normalized = this.normalizeSearchText(source);
+    const normalizedPrimary = this.normalizeSearchText(primarySource);
+    const normalizedTag = this.normalizeSearchText(tagSource);
     const matches = new Set<string>();
-    const primaryCategoryId = this.resolvePrimaryCategoryFromBackendLocation(
+    const primaryCategoryId =
+      this.resolvePrimaryCategoryFromOrderedLabels(primaryLabels) ??
+      this.resolvePrimaryCategoryFromBackendLocation(
       location,
       rawPayload,
-      normalized
+      normalizedPrimary
     );
 
     if (primaryCategoryId) {
@@ -465,30 +544,38 @@ export class PlaceMapperService {
       matches.add('travel');
     }
 
-    if (this.includesAny(normalized, ['romantic', 'date', 'couple', 'hen ho', 'lounge', 'cocktail', 'wine'])) {
+    if (this.includesAny(normalizedTag, ['romantic', 'date', 'couple', 'hen ho', 'lounge', 'cocktail', 'wine'])) {
       matches.add('date');
     }
 
-    if (this.includesAny(normalized, ['group', 'family', 'friends', 'party', 'bbq', 'lau', 'pub', 'beer'])) {
+    if (this.includesAny(normalizedTag, ['group', 'family', 'friends', 'party', 'bbq', 'lau', 'pub', 'beer'])) {
       matches.add('group');
     }
 
-    if (this.includesAny(normalized, ['work', 'study', 'cowork', 'wifi', 'quiet', 'yen tinh'])) {
+    if (this.includesAny(normalizedTag, ['work', 'study', 'cowork', 'wifi', 'quiet', 'yen tinh'])) {
       matches.add('work');
     }
 
-    if (this.includesAny(normalized, ['photo', 'check in', 'check-in', 'decor', 'view', 'art', 'studio', 'song ao'])) {
+    if (this.includesAny(normalizedTag, ['photo', 'check in', 'check-in', 'decor', 'view', 'art', 'studio', 'song ao'])) {
       matches.add('photo');
     }
 
     return CATEGORY_CONFIG.map((category) => category.id).filter((id) => matches.has(id));
   }
 
-  private inferCategoryIds(source: string, ids: string[]): string[] {
-    const normalized = this.normalizeSearchText(source);
+  private inferCategoryIds(
+    primaryLabels: string[],
+    primarySource: string,
+    tagSource: string,
+    ids: string[],
+  ): string[] {
+    const normalizedPrimary = this.normalizeSearchText(primarySource);
+    const normalizedTag = this.normalizeSearchText(tagSource);
     const matches = new Set<string>();
 
-    const primaryCategoryId = this.resolvePrimaryCategory(normalized);
+    const primaryCategoryId =
+      this.resolvePrimaryCategoryFromOrderedLabels(primaryLabels) ??
+      this.resolvePrimaryCategory(normalizedPrimary);
 
     if (primaryCategoryId) {
       matches.add(primaryCategoryId);
@@ -496,19 +583,19 @@ export class PlaceMapperService {
       matches.add('travel');
     }
 
-    if (this.includesAny(normalized, ['romantic', 'date', 'couple', 'hen ho', 'lounge', 'cocktail', 'wine'])) {
+    if (this.includesAny(normalizedTag, ['romantic', 'date', 'couple', 'hen ho', 'lounge', 'cocktail', 'wine'])) {
       matches.add('date');
     }
 
-    if (this.includesAny(normalized, ['group', 'family', 'friends', 'party', 'bbq', 'lau', 'pub', 'beer'])) {
+    if (this.includesAny(normalizedTag, ['group', 'family', 'friends', 'party', 'bbq', 'lau', 'pub', 'beer'])) {
       matches.add('group');
     }
 
-    if (this.includesAny(normalized, ['work', 'study', 'cowork', 'wifi', 'quiet', 'yen tinh'])) {
+    if (this.includesAny(normalizedTag, ['work', 'study', 'cowork', 'wifi', 'quiet', 'yen tinh'])) {
       matches.add('work');
     }
 
-    if (this.includesAny(normalized, ['photo', 'check in', 'check-in', 'decor', 'view', 'art', 'studio', 'song ao'])) {
+    if (this.includesAny(normalizedTag, ['photo', 'check in', 'check-in', 'decor', 'view', 'art', 'studio', 'song ao'])) {
       matches.add('photo');
     }
 
@@ -524,19 +611,67 @@ export class PlaceMapperService {
       return 'hotel';
     }
 
-    if (this.includesAny(source, ['restaurant', 'nha hang', 'quan an', 'food', 'eatery', 'bistro', 'buffet'])) {
+    if (this.includesAny(source, ['restaurant', 'nha hang', 'quan an', 'food', 'eatery', 'bistro', 'buffet', 'brunch', 'bua nua buoi', 'tiem an'])) {
       return 'restaurant';
     }
 
-    if (this.includesAny(source, ['cafe', 'coffee shop', 'coffee', 'ca phe', 'espresso', 'tra sua', 'tea house'])) {
+    if (this.includesAny(source, ['cafe', 'coffee shop', 'coffee', 'ca phe', 'quan ca phe', 'tiem banh', 'bakery', 'patisserie', 'espresso', 'tra sua', 'tea house'])) {
       return 'cafe';
     }
 
-    if (this.includesAny(source, ['travel', 'du lich', 'tour', 'attraction', 'tourist', 'museum', 'park', 'beach', 'landmark', 'temple'])) {
+    if (this.includesAny(source, this.travelKeywords)) {
       return 'travel';
     }
 
     return null;
+  }
+
+  private resolvePrimaryCategoryFromOrderedLabels(labels: string[]): string | null {
+    const resolvedByLabel: string[] = [];
+    const normalizedLabels = labels
+      .map((label) => this.normalizeSearchText(label))
+      .filter((label) => Boolean(label));
+
+    for (const normalizedLabel of normalizedLabels) {
+      const resolved = this.resolvePrimaryCategory(normalizedLabel);
+
+      if (resolved) {
+        resolvedByLabel.push(resolved);
+      }
+    }
+
+    const firstResolved = resolvedByLabel[0] ?? null;
+
+    if (!firstResolved) {
+      return null;
+    }
+
+    const hasFoodLikeLabel = resolvedByLabel.includes('restaurant') || resolvedByLabel.includes('cafe');
+    const hasStayLikeLabel = resolvedByLabel.includes('hotel') || resolvedByLabel.includes('homestay');
+    const mainLabel = normalizedLabels[0] ?? '';
+    const mainResolved = this.resolvePrimaryCategory(mainLabel);
+
+    if (mainResolved === 'restaurant' || mainResolved === 'cafe') {
+      return mainResolved;
+    }
+
+    if ((mainResolved === 'hotel' || mainResolved === 'homestay') && !hasFoodLikeLabel) {
+      return mainResolved;
+    }
+
+    if (hasFoodLikeLabel && hasStayLikeLabel) {
+      if (resolvedByLabel.includes('restaurant')) {
+        return 'restaurant';
+      }
+
+      return 'cafe';
+    }
+
+    if (firstResolved === 'cafe' && resolvedByLabel.includes('restaurant')) {
+      return 'restaurant';
+    }
+
+    return firstResolved;
   }
 
   private resolvePrimaryCategoryFromBackendLocation(
@@ -557,6 +692,28 @@ export class PlaceMapperService {
       Boolean(this.readString(location.checkout_date)) ||
       Array.isArray(location.booking_platforms_json) ||
       Array.isArray(rawPayload['booking_platforms']);
+    const hasFoodSignals = this.includesAny(normalizedSource, [
+      'restaurant',
+      'nha hang',
+      'quan an',
+      'food',
+      'eatery',
+      'bistro',
+      'buffet',
+      'brunch',
+      'bua nua buoi',
+      'tiem an',
+      'cafe',
+      'coffee shop',
+      'coffee',
+      'ca phe',
+      'quan ca phe',
+      'tiem banh',
+      'bakery',
+      'patisserie',
+      'espresso',
+      'tea house',
+    ]);
 
     if (
       this.includesAny(normalizedSource, [
@@ -573,6 +730,10 @@ export class PlaceMapperService {
         'can ho dich vu',
       ])
     ) {
+      if (hasFoodSignals && !hasAccommodationFields) {
+        return null;
+      }
+
       return 'homestay';
     }
 
@@ -587,6 +748,10 @@ export class PlaceMapperService {
         'luu tru',
       ])
     ) {
+      if (hasFoodSignals && !hasAccommodationFields) {
+        return null;
+      }
+
       return 'hotel';
     }
 
@@ -829,7 +994,7 @@ export class PlaceMapperService {
         ? rawPayload['amenities']
         : [];
 
-    return source
+    const directOptions = source
       .map((item) => {
         const name = item && typeof item === 'object' && typeof (item as { name?: unknown }).name === 'string'
           ? (item as { name: string }).name.trim()
@@ -844,6 +1009,51 @@ export class PlaceMapperService {
         };
       })
       .filter((item) => Boolean(item.name));
+
+    const allowedGroupIds = new Set([
+      'amenities',
+      'atmosphere',
+      'highlights',
+      'offerings',
+      'service_options',
+      'dining_options',
+    ]);
+    const merged = new Map<string, { name: string; enabled: boolean }>();
+
+    for (const item of directOptions) {
+      merged.set(this.normalizeSearchText(item.name), item);
+    }
+
+    for (const group of this.readAboutGroups(rawPayload)) {
+      const groupId = this.readString(group.id)?.toLowerCase() ?? '';
+
+      if (!allowedGroupIds.has(groupId)) {
+        continue;
+      }
+
+      for (const option of group.options ?? []) {
+        const optionName = this.readString(option.name);
+
+        if (!optionName) {
+          continue;
+        }
+
+        const key = this.normalizeSearchText(optionName);
+        const enabled = option.enabled !== false;
+        const existing = merged.get(key);
+
+        if (!existing) {
+          merged.set(key, { name: optionName, enabled });
+          continue;
+        }
+
+        if (enabled && !existing.enabled) {
+          merged.set(key, { ...existing, enabled: true });
+        }
+      }
+    }
+
+    return [...merged.values()];
   }
 
   private readBookingPlatforms(
@@ -878,6 +1088,19 @@ export class PlaceMapperService {
 
       return platforms;
     }, []);
+  }
+
+  private readAboutGroups(rawPayload: Record<string, unknown>): BackendRawPayloadAboutGroup[] {
+    const about = rawPayload['about'];
+
+    if (!Array.isArray(about)) {
+      return [];
+    }
+
+    return about.filter(
+      (item): item is BackendRawPayloadAboutGroup =>
+        Boolean(item) && typeof item === 'object'
+    );
   }
 
   private readString(value: unknown): string | null {

@@ -176,7 +176,7 @@ export class Header implements OnInit {
 
     this.desktopSearchOpen.set(false);
     this.mobileSearchOpen.set(false);
-    this.router.navigate(['/list']);
+    this.router.navigate(['/discover']);
   }
 
   selectSuggestion(place: Place) {

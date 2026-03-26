@@ -179,6 +179,7 @@ export interface Place {
   distance_km?: number | null;
   hours: PlaceHour[];
   highlights: string[];
+  owner_id?: string | null;
   owner_name?: string | null;
   owner_posts: PlaceOwnerPost[];
   competitors: PlaceCompetitor[];
@@ -218,6 +219,20 @@ export interface HomePageData {
   demand_categories: HomeCategorySummary[];
   top_categories: HomeCategorySummary[];
   top_areas: HomeAreaSummary[];
+}
+
+export interface PaginationMeta {
+  current_page: number;
+  per_page: number;
+  total: number;
+  last_page: number;
+  from: number | null;
+  to: number | null;
+}
+
+export interface PaginatedPlacesResult {
+  data: Place[];
+  meta: PaginationMeta;
 }
 
 export interface User {
@@ -289,6 +304,7 @@ export interface ExternalLocation {
   featured_reviews?: ExternalLocationReview[];
   detailed_reviews?: ExternalLocationReview[];
   owner?: {
+    id?: string | null;
     name?: string | null;
   };
   owner_posts?: Array<{

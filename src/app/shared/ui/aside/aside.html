@@ -1,9 +1,16 @@
-<aside
-  class="fixed hidden h-screen w-64 flex-col border-r border-slate-100 bg-white lg:flex">
-  <div class="hide-scrollbar flex-1 overflow-y-auto p-6">
+<aside class="relative flex min-h-full w-64 flex-col bg-white md:w-full">
+  <div class="px-5 py-5 lg:py-4">
+    <a
+      routerLink="/"
+      (click)="closeMobileSidebar()"
+      class="mb-6 flex items-center border-b px-4 py-1 lg:hidden">
+      <img src="logo.svg" alt="didaune" class="h-14 w-auto" />
+    </a>
+
     <nav class="mb-8 flex flex-col gap-1">
       <a
         routerLink="/"
+        (click)="closeMobileSidebar()"
         routerLinkActive="bg-primary_light text-primary"
         [routerLinkActiveOptions]="{ exact: true }"
         class="group flex items-center gap-3 rounded-xl px-4 py-3 font-medium text-slate-600 transition hover:bg-slate-50 hover:text-primary">
@@ -11,6 +18,8 @@
         Trang chủ
       </a>
       <a
+        routerLink="/discover"
+        routerLinkActive="bg-primary_light text-primary"
         (click)="onCategoryClick('all')"
         class="group flex cursor-pointer items-center gap-3 rounded-xl px-4 py-3 font-medium text-slate-600 transition hover:bg-slate-50 hover:text-primary">
         <i class="fa-solid fa-compass text-lg"></i>
@@ -18,6 +27,7 @@
       </a>
       <a
         routerLink="/planner"
+        (click)="closeMobileSidebar()"
         routerLinkActive="bg-primary_light text-primary"
         class="group flex items-center gap-3 rounded-xl px-4 py-3 font-medium text-slate-600 transition hover:bg-slate-50 hover:text-primary">
         <i class="fa-solid fa-location-dot text-lg"></i>
@@ -25,13 +35,15 @@
       </a>
       <a
         routerLink="/map"
+        (click)="closeMobileSidebar()"
         routerLinkActive="bg-primary_light text-primary"
-        class="flex items-center gap-3 rounded-xl px-4 py-3 text-left font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-700">
+        class="flex items-center gap-3 rounded-xl px-4 py-3 text-left font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-700">
         <i class="fa-solid fa-map-location-dot w-5 text-center"></i>
         Bản đồ
       </a>
       <a
         routerLink="/favorite"
+        (click)="closeMobileSidebar()"
         routerLinkActive="bg-primary_light text-primary"
         class="group flex items-center gap-3 rounded-xl px-4 py-3 font-medium text-slate-600 transition hover:bg-slate-50 hover:text-primary">
         <i class="fa-solid fa-heart text-lg"></i>
@@ -55,14 +67,5 @@
         </button>
       </div>
     </div>
-  </div>
-
-  <div class="border-t border-slate-50 p-4">
-    <a
-      routerLink="/planner"
-      class="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-800 py-3.5 font-bold text-white shadow-lg transition hover:bg-slate-800">
-      <i class="fa-solid fa-wand-magic-sparkles text-yellow-300"></i>
-      Lên lịch trình AI
-    </a>
   </div>
 </aside>

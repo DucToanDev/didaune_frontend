@@ -24,13 +24,14 @@ export class Aside {
     { id: 'cafe', label: 'Cafe', icon: 'fa-mug-hot' },
     { id: 'hotel', label: 'Hotel', icon: 'fa-bed' },
     { id: 'homestay', label: 'Homestay', icon: 'fa-house' },
-    { id: 'restaurant', label: 'Nha hang', icon: 'fa-utensils' },
-    { id: 'travel', label: 'Du lich', icon: 'fa-map-location-dot' },
+    { id: 'restaurant', label: 'Nhà hàng', icon: 'fa-utensils' },
+    { id: 'travel', label: 'Du lịch', icon: 'fa-map-location-dot' },
   ];
 
   onCategoryClick(catId: string) {
     this.dataService.selectedCategoryId.set(catId);
     this.dataService.searchQuery.set('');
+    this.dataService.mobileSidebarOpen.set(false);
     this.router.navigate(['/discover']);
   }
 
@@ -40,6 +41,11 @@ export class Aside {
     this.dataService.sortOption.set('popular');
     this.dataService.selectedCategoryId.set(category.id);
     this.dataService.searchQuery.set('');
+    this.dataService.mobileSidebarOpen.set(false);
     this.router.navigate(['/discover']);
+  }
+
+  closeMobileSidebar() {
+    this.dataService.mobileSidebarOpen.set(false);
   }
 }

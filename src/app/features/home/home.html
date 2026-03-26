@@ -22,7 +22,7 @@
       <input id="wardSelectMobile" type="text" [value]="wardQuery()"
         (input)="onWardInput($event)"
         (focus)="onWardFocus()" (blur)="onWardBlur()"
-        placeholder="Tim phuong/xa"
+        placeholder="Tìm phường/xã"
         class="w-full bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none shadow-sm font-medium" />
       <div *ngIf="wardDropdownOpen() && filteredWards().length"
         class="absolute top-full left-0 mt-2 w-full max-h-72 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg z-20">
@@ -54,32 +54,64 @@
     </li>
   </ul>
 
-  <section
-    class="mb-12 bg-gradient-to-r from-sky-600 via-cyan-500 to-emerald-400 rounded-3xl p-6 sm:p-8 text-white flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
+  <!-- <section
+    class="group relative mb-12 overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_top_left,_rgba(125,211,252,0.4),_transparent_36%),linear-gradient(120deg,_#082f49_0%,_#0f766e_48%,_#34d399_100%)] px-6 py-6 text-white shadow-xl sm:px-8 sm:py-8">
     <div
-      class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition duration-300"></div>
+      class="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.16)_0%,transparent_45%,rgba(255,255,255,0.08)_100%)] opacity-80"></div>
     <div
-      class="absolute -left-12 bottom-0 w-48 h-48 bg-cyan-200/20 rounded-full blur-3xl"></div>
+      class="absolute -left-10 top-1/2 h-40 w-40 -translate-y-1/2 rounded-full bg-cyan-200/20 blur-3xl"></div>
     <div
-      class="absolute -right-10 -top-10 w-40 h-40 bg-white/20 rounded-full blur-2xl"></div>
-
-    <div class="mb-4 md:mb-0 relative z-10">
-      <h2 class="text-2xl font-extrabold mb-2 flex items-center">
-        <i
-          class="fa-solid fa-wand-magic-sparkles mr-3 text-cyan-100 text-3xl"></i>
-        Len lich trinh voi AI
-      </h2>
-      <p class="text-sky-50 text-sm md:text-base max-w-md font-medium">
-        Chi can chon ngan sach, thoi gian va mood, DiDauNe AI se goi y mot lich
-        trinh vua khop gu, vua hop tui tien cua ban.
-      </p>
+      class="absolute right-0 top-0 h-40 w-40 translate-x-1/3 -translate-y-1/3 rounded-full bg-emerald-200/20 blur-3xl"></div>
+    <div
+      class="absolute right-6 top-6 hidden h-20 w-20 items-center justify-center rounded-3xl border border-white/20 bg-white/10 backdrop-blur md:flex">
+      <i class="fa-solid fa-route text-3xl text-cyan-100"></i>
     </div>
-    <button [routerLink]="['/planner']"
-      class="relative z-10 bg-white text-sky-700 font-bold px-8 py-4 rounded-xl hover:bg-sky-50 transition w-full md:w-auto whitespace-nowrap flex items-center justify-center gap-2">
-      Trai nghiem ngay
-      <i class="fa-solid fa-arrow-right"></i>
-    </button>
-  </section>
+
+    <div class="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+      <div class="max-w-2xl">
+        <span
+          class="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-100">
+          <i class="fa-solid fa-wand-magic-sparkles text-[10px]"></i>
+          AI Planner
+        </span>
+        <h2 class="max-w-xl text-2xl font-black leading-tight sm:text-3xl">
+          Lên lịch trình thông minh cho từng gu đi chơi
+        </h2>
+        <p class="mt-3 max-w-xl text-sm font-medium leading-relaxed text-sky-50/90 md:text-base">
+          Chọn ngân sách, thời gian và mood. DiDauNe AI sẽ gợi ý lịch trình gọn,
+          hợp đường đi và đúng kiểu địa điểm bạn thích.
+        </p>
+        <div class="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-white/85">
+          <span class="rounded-full border border-white/15 bg-white/10 px-3 py-1.5">Toi uu cung duong</span>
+          <span class="rounded-full border border-white/15 bg-white/10 px-3 py-1.5">Co map va timeline</span>
+          <span class="rounded-full border border-white/15 bg-white/10 px-3 py-1.5">Chinh sua bang chat</span>
+        </div>
+      </div>
+
+      <div class="relative flex shrink-0 flex-col gap-3 md:items-end">
+        <button [routerLink]="['/planner']"
+          class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-6 py-4 text-sm font-extrabold text-sky-800 shadow-lg transition hover:bg-sky-50 md:w-auto">
+          Tao lich trinh ngay
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+        <div
+          class="grid grid-cols-3 gap-2 rounded-2xl border border-white/15 bg-slate-950/15 p-2 text-center text-[11px] font-semibold text-white/85 backdrop-blur">
+          <div class="rounded-xl bg-white/10 px-3 py-2">
+            <div class="text-base font-black text-white">3 phut</div>
+            <div>Tao plan</div>
+          </div>
+          <div class="rounded-xl bg-white/10 px-3 py-2">
+            <div class="text-base font-black text-white">Map</div>
+            <div>Toi uu</div>
+          </div>
+          <div class="rounded-xl bg-white/10 px-3 py-2">
+            <div class="text-base font-black text-white">AI</div>
+            <div>Ca nhan hoa</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section> -->
 
   <section class="mb-12">
     <div class="flex items-end justify-between gap-4 mb-5">
@@ -90,7 +122,7 @@
         <p class="text-sm text-slate-500 mt-1">Lựa chọn của bạn là gì?</p>
       </div>
     </div>
-    <div class="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
+    <div appDragScroll class="flex gap-6 overflow-x-auto hide-scrollbar pb-2">
       <button *ngFor="let category of demandCategories()" type="button"
         (click)="onCategoryClick(category.name)"
         class="group flex flex-col items-center gap-3 min-w-[88px]">
@@ -162,8 +194,7 @@
             <i class="fa-solid fa-location-dot mr-1 text-slate-400"></i>
             {{ place.address }}
           </p>
-          <p *ngIf="hasSuggestedHours(place)"
-            class="mb-2 text-xs text-slate-500 sm:mb-3 sm:text-sm">
+          <p class="mb-2 text-xs text-slate-500 sm:mb-3 sm:text-sm">
             <i class="fa-regular fa-clock mr-1 text-slate-400"></i>
             {{ getSuggestedHours(place) }}
           </p>
@@ -190,39 +221,35 @@
     </ng-template>
   </section>
 
-  <section class="mb-14" *ngIf="filteredRecentViewedPlaces().length">
+  <section class="mb-14" *ngIf="recentViewedPlaces().length">
     <div
       class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <h2 class="text-xl md:text-2xl font-bold text-slate-800">
-          Địa điểm bạn đã xem gần đây
+          Bạn đã xem gần đây
         </h2>
-        <p class="text-sm text-slate-500 mt-1">
-          Đang lọc theo {{ activeHomeCategoryLabel() }}
-        </p>
+        <!-- <p class="text-sm text-slate-500 mt-1">
+          Lịch sử xem gần đây của bạn
+        </p> -->
       </div>
-      <button type="button" (click)="exploreActiveCategory()"
-        class="inline-flex items-center gap-1 self-start text-sm font-semibold text-primary hover:underline">
-        Khám phá thêm
-        <i class="fa-solid fa-arrow-right"></i>
-      </button>
     </div>
 
-    <div class="flex gap-5 overflow-x-auto hide-scrollbar pb-4 snap-x">
-      <a *ngFor="let place of filteredRecentViewedPlaces()"
+    <div appDragScroll
+      class="flex gap-3 overflow-x-auto hide-scrollbar pb-4">
+      <a *ngFor="let place of recentViewedPlaces()"
         [routerLink]="['/detail', place.slug]"
-        class="group relative min-w-[280px] max-w-[280px] rounded-3xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-100 hover:shadow-lg snap-start">
+        class="group relative min-w-[calc((100vw-2.75rem)/2)] max-w-[calc((100vw-2.75rem)/2)] rounded-3xl border border-transparent bg-white p-4 shadow-sm transition hover:border-slate-100 hover:shadow-lg sm:gap-4 sm:rounded-3xl sm:p-4 sm:min-w-[280px] sm:max-w-[280px]">
         <button type="button" (click)="toggleFavorite($event, place.slug)"
           class="absolute right-6 top-6 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-sm backdrop-blur-sm transition"
           [class]="
-            dataService.isFavorite(place.slug)
-              ? 'text-rose-500'
-              : 'hover:text-rose-500'
-          ">
+          dataService.isFavorite(place.slug)
+            ? 'text-rose-500'
+            : 'hover:text-rose-500'
+        ">
           <i class="fa-solid fa-heart"></i>
         </button>
         <img [src]="place.image" [alt]="place.name"
-          class="h-44 w-full rounded-2xl object-cover" />
+          class="h-28 w-full rounded-[1rem] object-cover sm:h-44 sm:rounded-2xl" />
         <div class="absolute left-6 top-6 z-10">
           <span
             class="flex items-center gap-1 rounded-lg bg-white/80 px-2.5 py-1 text-sm font-semibold text-orange-500 backdrop-blur">
@@ -231,14 +258,13 @@
           </span>
         </div>
         <div class="mt-4">
-          <h3 class="text-lg font-bold text-slate-900 line-clamp-1">
+          <h3 class="mb-1 mt-0.5 line-clamp-2 text-[0.95rem] font-bold leading-snug text-slate-800 transition group-hover:text-primary sm:mt-1 sm:text-lg sm:leading-tight">
             {{ place.name }}
           </h3>
           <p class="mt-1 text-sm text-slate-500 line-clamp-2">
             {{ place.address }}
           </p>
-          <p *ngIf="hasSuggestedHours(place)"
-            class="mt-2 text-sm text-slate-500">
+          <p class="mt-2 text-sm text-slate-500">
             <i class="fa-regular fa-clock mr-1 text-slate-400"></i>
             {{ getSuggestedHours(place) }}
           </p>
@@ -268,10 +294,11 @@
     </div>
 
     <div *ngIf="filteredNearbyPlaces().length; else nearbyEmpty"
-      class="flex gap-5 overflow-x-auto hide-scrollbar pb-4 snap-x">
+      appDragScroll
+      class="flex gap-3 overflow-x-auto hide-scrollbar pb-4">
       <a *ngFor="let place of filteredNearbyPlaces()"
         [routerLink]="['/detail', place.slug]"
-        class="group relative min-w-[280px] max-w-[280px] rounded-3xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-100 hover:shadow-lg snap-start">
+        class="group relative min-w-[calc((100vw-2.75rem)/2)] max-w-[calc((100vw-2.75rem)/2)] rounded-3xl border border-transparent bg-white p-4 shadow-sm transition hover:border-slate-100 hover:shadow-lg sm:min-w-[280px] sm:max-w-[280px]">
         <button type="button" (click)="toggleFavorite($event, place.slug)"
           class="absolute right-6 top-6 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-sm backdrop-blur-sm transition"
           [class]="
@@ -282,7 +309,7 @@
           <i class="fa-solid fa-heart"></i>
         </button>
         <img [src]="place.image" [alt]="place.name"
-          class="h-44 w-full rounded-2xl object-cover" />
+          class="h-28 w-full rounded-[1rem] object-cover sm:h-44 sm:rounded-2xl" />
         <div class="absolute left-6 top-6 z-10">
           <span
             class="flex items-center gap-1 rounded-lg bg-white/80 px-2.5 py-1 text-sm font-semibold text-orange-500 backdrop-blur">
@@ -292,7 +319,7 @@
         </div>
         <div class="mt-4">
           <div class="flex items-start justify-between gap-3">
-            <h3 class="text-lg font-bold text-slate-900 line-clamp-1">
+            <h3 class="mb-1 mt-0.5 line-clamp-2 text-[0.95rem] font-bold leading-snug text-slate-800 transition group-hover:text-primary sm:mt-1 sm:text-lg sm:leading-tight">
               {{ place.name }}
             </h3>
             <span
@@ -303,8 +330,7 @@
           <p class="mt-1 text-sm text-slate-500 line-clamp-2">
             {{ place.address }}
           </p>
-          <p *ngIf="hasSuggestedHours(place)"
-            class="mt-2 text-sm text-slate-500">
+          <p class="mt-2 text-sm text-slate-500">
             <i class="fa-regular fa-clock mr-1 text-slate-400"></i>
             {{ getSuggestedHours(place) }}
           </p>
@@ -382,14 +408,15 @@
     </div>
 
     <div
-      class="trending-grid flex gap-4 overflow-x-auto hide-scrollbar pb-4 snap-x lg:grid lg:grid-cols-2 lg:gap-5 lg:overflow-visible lg:pb-0">
+      appDragScroll
+      class="trending-grid flex gap-3 overflow-x-auto hide-scrollbar pb-4 lg:grid lg:grid-cols-2 lg:gap-5 lg:overflow-visible lg:pb-0">
       <a *ngFor="let place of filteredTrendingPlaces()"
         [routerLink]="['/detail', place.slug]"
-        class="trending-card group min-w-[300px] max-w-[300px] snap-start rounded-[1.75rem] border border-slate-200 bg-white p-3 shadow-sm transition hover:border-slate-100 hover:shadow-lg sm:min-w-[340px] sm:max-w-[340px] lg:max-w-none lg:p-4">
-        <div class="flex gap-3 sm:gap-4">
+        class="trending-card group min-w-[60vw] max-w-[80vw] rounded-[1.75rem] border border-slate-200 bg-white p-3 shadow-sm transition hover:border-slate-100 hover:shadow-lg sm:min-w-[340px] sm:max-w-[340px] lg:max-w-none lg:p-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:gap-4">
           <div class="relative shrink-0">
             <img [src]="place.image" [alt]="place.name"
-              class="h-24 w-24 rounded-2xl object-cover sm:h-28 sm:w-28 lg:h-32 lg:w-32" />
+              class="aspect-[16/9] w-full rounded-[1rem] bg-slate-100 object-cover sm:h-28 sm:w-28 sm:aspect-square sm:rounded-2xl lg:h-32 lg:w-32" />
             <div class="absolute left-2 top-2">
               <span
                 class="flex items-center gap-1 rounded-full bg-white/85 px-2 py-1 text-[11px] font-semibold text-orange-500 backdrop-blur">
@@ -397,40 +424,45 @@
                 {{ place.rating }}
               </span>
             </div>
+            <div class="absolute right-2 top-2">
+              <span
+                class="inline-flex items-center rounded-full bg-white/85 px-2 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur">
+                {{ place.review_count }} reviews
+              </span>
+            </div>
           </div>
 
           <div class="min-w-0 flex-1">
-            <div class="flex items-start justify-between gap-2">
+            <div
+              class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div class="min-w-0">
                 <h3
-                  class="line-clamp-2 text-[0.98rem] font-bold leading-snug text-slate-900 transition group-hover:text-primary sm:text-lg">
+                  class="line-clamp-1 text-[0.98rem] font-bold leading-snug text-slate-900 transition group-hover:text-primary sm:line-clamp-2 sm:text-lg">
                   {{ place.name }}
                 </h3>
-                <p class="mt-1 text-sm text-slate-500 line-clamp-2">
+                <p
+                  class="mt-1 text-xs text-slate-500 sm:text-sm">
                   {{ place.address }}
                 </p>
               </div>
-              <div
-                class="shrink-0 rounded-xl bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                {{ place.review_count }} review
-              </div>
             </div>
 
-            <div class="mt-3 flex flex-wrap gap-2">
+            <div class="mt-3 hidden flex-wrap gap-2 sm:flex">
               <span *ngFor="let category of place.category_labels.slice(0, 2)"
                 class="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
                 {{ category }}
               </span>
             </div>
 
-            <p *ngIf="hasSuggestedHours(place)"
-              class="mt-3 text-xs text-slate-500 sm:text-sm">
+            <p class="mt-2 text-xs text-slate-500 sm:mt-3 sm:text-sm">
               <i class="fa-regular fa-clock mr-1 text-slate-400"></i>
               {{ getSuggestedHours(place) }}
             </p>
 
-            <div class="mt-3 flex items-center justify-between">
-              <span class="text-xs font-medium text-slate-400 sm:text-sm">
+            <div
+              class="mt-3 flex items-center justify-between gap-3">
+              <span
+                class="line-clamp-1 text-xs font-medium text-slate-400 sm:text-sm">
                 {{ place.city_name }}
               </span>
               <span
@@ -503,7 +535,7 @@
         khách hàng tiềm năng mỗi ngày. Đăng ký hoàn toàn miễn phí.
       </p>
     </div>
-    <button
+    <button [routerLink]="['/partner/register']"
       class="relative z-10 bg-primary text-white font-bold px-8 py-4 rounded-xl hover:bg-orange-600 transition whitespace-nowrap shadow-lg flex items-center gap-2">
       <i class="fa-solid fa-store"></i>
       Đăng ký đối tác

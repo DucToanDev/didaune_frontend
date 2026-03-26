@@ -1,13 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { EMPTY, Observable, expand, map, reduce } from 'rxjs';
-import { HomePageData, Place } from '../models/app.models';
+import {
+  HomePageData,
+  PaginatedPlacesResult,
+  Place,
+} from '../models/app.models';
 import { BACKEND_API_CONFIG } from '../config/backend-api.config';
 import { PROVINCE_MAPPINGS } from '../config/location-api.config';
-import {
-  BackendLocation,
-  PlaceMapperService,
-} from './place-mapper.service';
+import { BackendLocation, PlaceMapperService } from './place-mapper.service';
 
 interface BackendApiEnvelope<T> {
   success: boolean;
@@ -68,6 +69,23 @@ interface BackendHomePayload {
   top_areas: BackendHomeSummary[];
 }
 
+export interface OwnerLocationSubmissionPayload {
+  contact_name: string;
+  contact_phone: string;
+  contact_email?: string | null;
+  name: string;
+  category: 'cafe' | 'hotel' | 'homestay' | 'restaurant' | 'travel';
+  city?: string | null;
+  district?: string | null;
+  ward?: string | null;
+  address?: string | null;
+  description?: string | null;
+  price_range?: string | null;
+  website?: string | null;
+  google_maps_link?: string | null;
+  amenities?: string[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -80,24 +98,107 @@ export class LocationApiService {
     return this.fetchLocationPage(cityId, wardCode, 1).pipe(
       expand((response) =>
         response.data.current_page < response.data.last_page
-          ? this.fetchLocationPage(cityId, wardCode, response.data.current_page + 1)
-          : EMPTY
+          ? this.fetchLocationPage(
+              cityId,
+              wardCode,
+              response.data.current_page + 1,
+            )
+          : EMPTY,
       ),
       map((response) => response.data.data),
       reduce((all, pageData) => [...all, ...pageData], [] as BackendLocation[]),
       map((locations) =>
         locations.map((location, index, source) =>
-          this.mapper.normalizeBackendLocation(location, index, source.length, cityId)
-        )
-      )
+          this.mapper.normalizeBackendLocation(
+            location,
+            index,
+            source.length,
+            cityId,
+          ),
+        ),
+      ),
     );
+  }
+
+  fetchLocationsPaginated(options: {
+    cityId: string;
+    wardCode?: string;
+    areaId?: string;
+    categoryId?: string;
+    sort?: 'popular' | 'rating' | 'name' | 'new';
+    page?: number;
+    perPage?: number;
+  }): Observable<PaginatedPlacesResult> {
+    const {
+      cityId,
+      wardCode = '',
+      areaId = 'all',
+      categoryId = 'all',
+      sort = 'popular',
+      page = 1,
+      perPage = 12,
+    } = options;
+
+    let params = new HttpParams()
+      .set('per_page', String(perPage))
+      .set('page', String(page));
+
+    const provinceCode = this.getProvinceCodeByCityId(cityId);
+
+    if (provinceCode) {
+      params = params.set('province_code', String(provinceCode));
+    }
+
+    if (wardCode) {
+      params = params.set('ward_code', wardCode);
+    }
+
+    if (areaId && areaId !== 'all') {
+      params = params.set('district', areaId);
+    }
+
+    if (categoryId && categoryId !== 'all') {
+      params = params.set('category', categoryId);
+    }
+
+    const backendSort =
+      sort === 'popular' ? 'reviews_count' : sort === 'new' ? 'latest' : sort;
+    params = params.set('sort', backendSort);
+
+    return this.http
+      .get<BackendApiEnvelope<BackendPaginated<BackendLocation>>>(
+        `${this.apiBaseUrl}/locations`,
+        {
+          params,
+        },
+      )
+      .pipe(
+        map((response) => ({
+          data: response.data.data.map((location, index, source) =>
+            this.mapper.normalizeBackendLocation(
+              location,
+              index,
+              source.length,
+              cityId,
+            ),
+          ),
+          meta: {
+            current_page: response.data.current_page,
+            per_page: response.data.per_page,
+            total: response.data.total,
+            last_page: response.data.last_page,
+            from: response.data.from,
+            to: response.data.to,
+          },
+        })),
+      );
   }
 
   fetchHomeData(
     cityId: string,
     wardCode: string,
     search: string,
-    coordinates: { lat: number; lng: number } | null
+    coordinates: { lat: number; lng: number } | null,
   ): Observable<HomePageData> {
     let params = new HttpParams();
     const provinceCode = this.getProvinceCodeByCityId(cityId);
@@ -115,55 +216,84 @@ export class LocationApiService {
     }
 
     if (coordinates) {
-      params = params.set('lat', String(coordinates.lat)).set('lng', String(coordinates.lng));
+      params = params
+        .set('lat', String(coordinates.lat))
+        .set('lng', String(coordinates.lng));
     }
 
     return this.http
-      .get<BackendApiEnvelope<BackendHomePayload>>(`${this.apiBaseUrl}/home`, { params })
+      .get<
+        BackendApiEnvelope<BackendHomePayload>
+      >(`${this.apiBaseUrl}/home`, { params })
       .pipe(
         map((response) => ({
           hero: response.data.hero,
-          featured_places: response.data.featured_places.map((location, index, source) =>
-            this.mapper.normalizeBackendLocation(location, index, source.length, cityId)
+          featured_places: response.data.featured_places.map(
+            (location, index, source) =>
+              this.mapper.normalizeBackendLocation(
+                location,
+                index,
+                source.length,
+                cityId,
+              ),
           ),
-          trending_places: response.data.trending_places.map((location, index, source) =>
-            this.mapper.normalizeBackendLocation(location, index, source.length, cityId)
+          trending_places: response.data.trending_places.map(
+            (location, index, source) =>
+              this.mapper.normalizeBackendLocation(
+                location,
+                index,
+                source.length,
+                cityId,
+              ),
           ),
           new_places: response.data.new_places.map((location, index, source) =>
-            this.mapper.normalizeBackendLocation(location, index, source.length, cityId)
+            this.mapper.normalizeBackendLocation(
+              location,
+              index,
+              source.length,
+              cityId,
+            ),
           ),
-          nearby_places: response.data.nearby_places.map((location, index, source) =>
-            this.mapper.normalizeBackendLocation(location, index, source.length, cityId)
+          nearby_places: response.data.nearby_places.map(
+            (location, index, source) =>
+              this.mapper.normalizeBackendLocation(
+                location,
+                index,
+                source.length,
+                cityId,
+              ),
           ),
           demand_categories: response.data.demand_categories,
           top_categories: response.data.top_categories,
           top_areas: response.data.top_areas,
-        }))
+        })),
       );
   }
 
   getPlaceBySlug(slug: string): Observable<Place> {
     return this.http
-      .get<BackendApiEnvelope<BackendLocation> | BackendLocation>(
-        `${this.apiBaseUrl}/locations/slug/${slug}`
-      )
+      .get<
+        BackendApiEnvelope<BackendLocation> | BackendLocation
+      >(`${this.apiBaseUrl}/locations/slug/${slug}`)
       .pipe(
         map((response) => {
           const location = 'data' in response ? response.data : response;
           return this.mapper.normalizeBackendLocation(location, 0, 1);
-        })
+        }),
       );
   }
 
   fetchFavoriteSlugs(userId: number): Observable<string[]> {
     return this.http
-      .get<BackendApiEnvelope<BackendFavorite[]>>(`${this.apiBaseUrl}/users/${userId}/favorites`)
+      .get<
+        BackendApiEnvelope<BackendFavorite[]>
+      >(`${this.apiBaseUrl}/users/${userId}/favorites`)
       .pipe(
         map((response) =>
           response.data
             .map((favorite) => favorite.location?.slug)
-            .filter((slug): slug is string => Boolean(slug))
-        )
+            .filter((slug): slug is string => Boolean(slug)),
+        ),
       );
   }
 
@@ -174,15 +304,31 @@ export class LocationApiService {
   }
 
   removeFavorite(userId: number, locationId: string): Observable<unknown> {
-    return this.http.delete(`${this.apiBaseUrl}/users/${userId}/favorites/${locationId}`);
+    return this.http.delete(
+      `${this.apiBaseUrl}/users/${userId}/favorites/${locationId}`,
+    );
+  }
+
+  submitOwnerLocation(payload: OwnerLocationSubmissionPayload): Observable<{
+    success: boolean;
+    message: string;
+    data?: { id: string; status: string; created_at: string };
+  }> {
+    return this.http.post<{
+      success: boolean;
+      message: string;
+      data?: { id: string; status: string; created_at: string };
+    }>(`${this.apiBaseUrl}/owner/location-submissions`, payload);
   }
 
   private fetchLocationPage(
     cityId: string,
     wardCode: string,
-    page: number
+    page: number,
   ): Observable<BackendApiEnvelope<BackendPaginated<BackendLocation>>> {
-    let params = new HttpParams().set('per_page', '50').set('page', String(page));
+    let params = new HttpParams()
+      .set('per_page', '50')
+      .set('page', String(page));
     const provinceCode = this.getProvinceCodeByCityId(cityId);
 
     if (provinceCode) {
@@ -195,11 +341,12 @@ export class LocationApiService {
 
     return this.http.get<BackendApiEnvelope<BackendPaginated<BackendLocation>>>(
       `${this.apiBaseUrl}/locations`,
-      { params }
+      { params },
     );
   }
 
   private getProvinceCodeByCityId(cityId: string): number | undefined {
-    return PROVINCE_MAPPINGS.find((mapping) => mapping.id === cityId)?.provinceCode;
+    return PROVINCE_MAPPINGS.find((mapping) => mapping.id === cityId)
+      ?.provinceCode;
   }
 }

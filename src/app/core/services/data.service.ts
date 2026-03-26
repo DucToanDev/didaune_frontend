@@ -88,6 +88,7 @@ export class DataService {
   selectedCategoryId = signal('all');
   selectedAmenityId = signal('all');
   sortOption = signal<'popular' | 'rating' | 'name' | 'new'>('popular');
+  mobileSidebarOpen = signal(false);
   currentCoordinates = signal<{ lat: number; lng: number } | null>(
     this.readStorage<{ lat: number; lng: number } | null>(this.coordinatesStorageKey, null)
   );

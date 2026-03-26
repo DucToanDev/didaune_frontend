@@ -47,8 +47,95 @@
   z-index: 2 !important;
 }
 
+:host ::ng-deep .map-place-marker-wrapper {
+  background: transparent;
+  border: 0;
+}
+
+:host ::ng-deep .map-place-marker {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 3px solid #fff;
+  border-radius: 999px;
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.24);
+}
+
+:host ::ng-deep .map-place-marker::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  width: 14px;
+  height: 14px;
+  background: inherit;
+  border-right: 3px solid #fff;
+  border-bottom: 3px solid #fff;
+  transform: translateX(-50%) rotate(45deg);
+  border-bottom-right-radius: 4px;
+}
+
+:host ::ng-deep .map-place-marker__icon {
+  position: relative;
+  z-index: 1;
+  font-size: 15px;
+  line-height: 1;
+}
+
+:host ::ng-deep .map-place-marker.marker-cafe {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+}
+
+:host ::ng-deep .map-place-marker.marker-restaurant {
+  background: linear-gradient(135deg, #fb7185, #e11d48);
+}
+
+:host ::ng-deep .map-place-marker.marker-hotel {
+  background: linear-gradient(135deg, #38bdf8, #2563eb);
+}
+
+:host ::ng-deep .map-place-marker.marker-homestay {
+  background: linear-gradient(135deg, #34d399, #059669);
+}
+
+:host ::ng-deep .map-place-marker.marker-travel {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+
+:host ::ng-deep .map-place-marker.marker-date {
+  background: linear-gradient(135deg, #fb7185, #ec4899);
+}
+
+:host ::ng-deep .map-place-marker.marker-group {
+  background: linear-gradient(135deg, #60a5fa, #2563eb);
+}
+
+:host ::ng-deep .map-place-marker.marker-work {
+  background: linear-gradient(135deg, #2dd4bf, #0f766e);
+}
+
+:host ::ng-deep .map-place-marker.marker-photo {
+  background: linear-gradient(135deg, #a78bfa, #7c3aed);
+}
+
+:host ::ng-deep .map-place-marker.marker-default {
+  background: linear-gradient(135deg, #64748b, #334155);
+}
+
 .map-selected-card {
   z-index: 20;
+}
+
+.map-action-button {
+  cursor: pointer;
+}
+
+.map-filter-panel {
+  position: relative;
+  z-index: 10;
 }
 
 @media (max-width: 767px) {
@@ -56,5 +143,10 @@
     left: 1rem;
     right: 1rem;
     max-width: none;
+  }
+
+  .map-action-button {
+    top: 0.75rem;
+    right: 0.75rem;
   }
 }

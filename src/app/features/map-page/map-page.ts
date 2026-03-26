@@ -8,10 +8,12 @@ import {
   effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { Place } from '../../core/models/app.models';
+import { CATEGORY_CONFIG } from '../../core/config/place-taxonomy.config';
 import { DataService } from '../../core/services/data.service';
 
 declare global {
@@ -45,6 +47,15 @@ interface LeafletMarker {
   on(event: string, handler: () => void): LeafletMarker;
 }
 
+interface LeafletIcon {
+  options?: {
+    iconSize?: [number, number];
+    iconAnchor?: [number, number];
+    popupAnchor?: [number, number];
+    tooltipAnchor?: [number, number];
+  };
+}
+
 interface LeafletCircle {
   addTo(map: LeafletMap): LeafletCircle;
   remove(): void;
@@ -62,7 +73,18 @@ interface LeafletNamespace {
     urlTemplate: string,
     options?: { attribution?: string; maxZoom?: number },
   ): LeafletTileLayer;
-  marker(latLng: [number, number]): LeafletMarker;
+  marker(
+    latLng: [number, number],
+    options?: { icon?: LeafletIcon },
+  ): LeafletMarker;
+  divIcon(options?: {
+    className?: string;
+    html?: string;
+    iconSize?: [number, number];
+    iconAnchor?: [number, number];
+    popupAnchor?: [number, number];
+    tooltipAnchor?: [number, number];
+  }): LeafletIcon;
   circle(
     latLng: [number, number],
     options?: {
@@ -96,6 +118,17 @@ export class MapPage implements AfterViewInit {
   private readonly pageSize = 12;
   private readonly nearbyRadiusKm = 5;
   private readonly nearbyRadiusMeters = 5000;
+  private readonly markerCategoryPriority = [
+    'cafe',
+    'restaurant',
+    'hotel',
+    'homestay',
+    'travel',
+    'date',
+    'group',
+    'work',
+    'photo',
+  ];
   private destroyRef = inject(DestroyRef);
   private router = inject(Router);
   public dataService = inject(DataService);
@@ -106,6 +139,9 @@ export class MapPage implements AfterViewInit {
   selectedPlace = signal<Place | null>(null);
   currentPage = signal(1);
   selectedNearbyCategory = signal('all');
+  mapSearchQuery = signal('');
+  selectedMapCategory = signal('all');
+  mapFilterOpen = signal(false);
   locating = signal(false);
   private leafletReady = signal(false);
   private map?: LeafletMap;
@@ -173,20 +209,54 @@ export class MapPage implements AfterViewInit {
     );
   });
 
+  mapCategories = CATEGORY_CONFIG.filter((category) =>
+    this.markerCategoryPriority.includes(category.id),
+  );
+
+  filteredMapPlaces = computed(() => {
+    const categoryId = this.selectedMapCategory();
+    const search = this.mapSearchQuery().trim().toLowerCase();
+
+    return this.filteredByNearbyCategory().filter((place) => {
+      const matchCategory =
+        categoryId === 'all' || place.categories.includes(categoryId);
+
+      if (!matchCategory) {
+        return false;
+      }
+
+      if (!search) {
+        return true;
+      }
+
+      const searchTarget = [
+        place.name,
+        place.address,
+        place.district_name,
+        place.city_name,
+        ...place.category_labels,
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      return searchTarget.includes(search);
+    });
+  });
+
   geocodedPlaces = computed(() =>
-    this.filteredByNearbyCategory().filter(
+    this.filteredMapPlaces().filter(
       (place) => place.latitude !== undefined && place.longitude !== undefined,
     ),
   );
 
   totalPages = computed(() =>
-    Math.max(1, Math.ceil(this.filteredByNearbyCategory().length / this.pageSize)),
+    Math.max(1, Math.ceil(this.filteredMapPlaces().length / this.pageSize)),
   );
 
   paginatedPlaces = computed(() => {
     const page = Math.min(this.currentPage(), this.totalPages());
     const start = (page - 1) * this.pageSize;
-    return this.filteredByNearbyCategory().slice(start, start + this.pageSize);
+    return this.filteredMapPlaces().slice(start, start + this.pageSize);
   });
 
   paginatedGeocodedPlaces = computed(() =>
@@ -313,6 +383,12 @@ export class MapPage implements AfterViewInit {
         this.currentPage.set(1);
       }
     });
+
+    effect(() => {
+      this.mapSearchQuery();
+      this.selectedMapCategory();
+      this.currentPage.set(1);
+    });
   }
 
   async ngAfterViewInit(): Promise<void> {
@@ -376,6 +452,19 @@ export class MapPage implements AfterViewInit {
     this.currentPage.set(1);
   }
 
+  updateMapSearchQuery(value: string) {
+    this.mapSearchQuery.set(value);
+  }
+
+  toggleMapFilter() {
+    this.mapFilterOpen.update((open) => !open);
+  }
+
+  setMapCategory(categoryId: string) {
+    this.selectedMapCategory.set(categoryId);
+    this.mapFilterOpen.set(false);
+  }
+
   private renderMarkers(places: Place[]) {
     if (!this.map || !window.L) {
       return;
@@ -389,7 +478,7 @@ export class MapPage implements AfterViewInit {
       return;
     }
 
-    const selected = this.selectedPlace();
+    const selected = untracked(() => this.selectedPlace());
     if (selected && !places.some((place) => place.slug === selected.slug)) {
       this.selectedPlace.set(null);
     }
@@ -400,9 +489,10 @@ export class MapPage implements AfterViewInit {
       const lat = place.latitude as number;
       const lng = place.longitude as number;
       bounds.push([lat, lng]);
+      const markerIcon = this.buildMarkerIcon(place);
 
       const marker = window
-        .L!.marker([lat, lng])
+        .L!.marker([lat, lng], { icon: markerIcon })
         .addTo(this.map!)
         .bindTooltip(this.escapeHtml(place.name), {
           direction: 'top',
@@ -410,7 +500,6 @@ export class MapPage implements AfterViewInit {
           opacity: 0.95,
           sticky: true,
         })
-        .bindPopup(this.buildPopup(place))
         .on('click', () => this.selectPlace(place));
 
       return marker;
@@ -467,7 +556,7 @@ export class MapPage implements AfterViewInit {
   }
 
   get filteredTotalPlaces(): number {
-    return this.filteredByNearbyCategory().length;
+    return this.filteredMapPlaces().length;
   }
 
   get pageFrom(): number {
@@ -483,7 +572,10 @@ export class MapPage implements AfterViewInit {
       return 0;
     }
 
-    return Math.min(this.currentPage() * this.pageSize, this.filteredTotalPlaces);
+    return Math.min(
+      this.currentPage() * this.pageSize,
+      this.filteredTotalPlaces,
+    );
   }
 
   private clearMarkers() {
@@ -492,6 +584,42 @@ export class MapPage implements AfterViewInit {
     }
 
     this.markers = [];
+  }
+
+  private buildMarkerIcon(place: Place): LeafletIcon {
+    const category = this.getMarkerCategory(place);
+    const config = CATEGORY_CONFIG.find((item) => item.id === category);
+    const iconClass = config?.icon ?? 'fa-location-dot';
+    const categoryLabel =
+      config?.name ?? place.category_labels[0] ?? 'Địa điểm';
+    const markerClass = category
+      ? `marker-${this.escapeHtml(category)}`
+      : 'marker-default';
+
+    return window.L!.divIcon({
+      className: 'map-place-marker-wrapper',
+      html: `
+        <div class="map-place-marker ${markerClass}" aria-label="${this.escapeHtml(categoryLabel)}">
+          <span class="map-place-marker__icon">
+            <i class="fa-solid ${this.escapeHtml(iconClass)}" aria-hidden="true"></i>
+          </span>
+        </div>
+      `,
+      iconSize: [38, 50],
+      iconAnchor: [19, 50],
+      popupAnchor: [0, -42],
+      tooltipAnchor: [0, -40],
+    });
+  }
+
+  private getMarkerCategory(place: Place): string | null {
+    for (const categoryId of this.markerCategoryPriority) {
+      if (place.categories.includes(categoryId)) {
+        return categoryId;
+      }
+    }
+
+    return place.categories[0] ?? null;
   }
 
   private renderNearbyRadiusScan() {
@@ -617,7 +745,9 @@ export class MapPage implements AfterViewInit {
     }
 
     try {
-      const status = await permissionsApi.query({ name: 'geolocation' as PermissionName });
+      const status = await permissionsApi.query({
+        name: 'geolocation' as PermissionName,
+      });
 
       if (status.state === 'granted') {
         this.requestCurrentLocation();

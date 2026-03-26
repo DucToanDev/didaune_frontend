@@ -123,8 +123,11 @@ export class LocationApiService {
   fetchLocationsPaginated(options: {
     cityId: string;
     wardCode?: string;
+    wardName?: string;
     areaId?: string;
     categoryId?: string;
+    amenityId?: string;
+    search?: string;
     sort?: 'popular' | 'rating' | 'name' | 'new';
     page?: number;
     perPage?: number;
@@ -132,8 +135,11 @@ export class LocationApiService {
     const {
       cityId,
       wardCode = '',
+      wardName = '',
       areaId = 'all',
       categoryId = 'all',
+      amenityId = 'all',
+      search = '',
       sort = 'popular',
       page = 1,
       perPage = 12,
@@ -151,6 +157,8 @@ export class LocationApiService {
 
     if (wardCode) {
       params = params.set('ward_code', wardCode);
+    } else if (wardName.trim()) {
+      params = params.set('ward', wardName.trim());
     }
 
     if (areaId && areaId !== 'all') {
@@ -159,6 +167,14 @@ export class LocationApiService {
 
     if (categoryId && categoryId !== 'all') {
       params = params.set('category', categoryId);
+    }
+
+    if (amenityId && amenityId !== 'all') {
+      params = params.set('amenity', amenityId);
+    }
+
+    if (search.trim()) {
+      params = params.set('search', search.trim());
     }
 
     const backendSort =

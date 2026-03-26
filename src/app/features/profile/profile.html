@@ -1,75 +1,94 @@
-<div class="p-4 lg:p-8 pb-24 md:pb-10 max-w-5xl mx-auto">
-  <section class="mb-6 overflow-hidden rounded-[32px] border border-slate-100 bg-white p-6 shadow-sm">
-    <div class="flex flex-col gap-6 md:flex-row md:items-center">
-      <img [src]="user().avatar" [alt]="user().name" class="h-28 w-28 rounded-full object-cover shadow-lg" />
-      <div class="flex-1">
-        <span class="text-xs font-bold uppercase tracking-[0.22em] text-orange-500">Profile</span>
-        <h1 class="mt-2 text-3xl font-black text-slate-900">{{ user().name }}</h1>
-        <p class="mt-2 text-sm leading-6 text-slate-500">{{ user().bio }}</p>
-        <div class="mt-4 flex flex-wrap gap-2">
-          <span class="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-600">
-            {{ user().membership }}
-          </span>
-          <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-600">
-            {{ user().points }} diem
-          </span>
+<div class="mx-auto max-w-5xl px-4 pb-24 pt-6 md:pb-10 lg:px-8">
+  <!-- Profile Hero -->
+  <section class="mb-8 overflow-hidden rounded-[32px] border border-slate-100 bg-white shadow-sm">
+    <div class="relative h-32 bg-gradient-to-r from-orange-400 via-rose-400 to-violet-500 sm:h-40">
+      <div class="absolute inset-0 bg-black/10"></div>
+    </div>
+    <div class="relative px-6 pb-6">
+      <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:gap-6">
+        <img [src]="user().avatar" [alt]="user().name"
+          class="-mt-14 h-28 w-28 flex-shrink-0 rounded-full border-4 border-white object-cover shadow-lg sm:-mt-16 sm:h-32 sm:w-32" />
+        <div class="min-w-0 flex-1 pt-2 sm:pb-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 class="text-2xl font-black text-slate-900 sm:text-3xl">{{ user().name }}</h1>
+            <span class="rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-3 py-0.5 text-[11px] font-bold text-white">
+              {{ user().membership }}
+            </span>
+          </div>
+          <p class="mt-1.5 text-sm leading-6 text-slate-500">{{ user().bio }}</p>
         </div>
+        <a routerLink="/favorite"
+          class="flex w-fit items-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800">
+          <i class="fa-solid fa-heart"></i>
+          Địa điểm đã lưu
+        </a>
       </div>
+    </div>
+  </section>
 
-      <a
-        routerLink="/favorite"
-        class="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white"
-      >
-        Xem dia diem da luu
+  <!-- Stats -->
+  <section class="mb-8 grid grid-cols-3 gap-3 sm:gap-4">
+    <div class="rounded-[24px] border border-slate-100 bg-white p-4 text-center shadow-sm sm:p-5">
+      <div class="text-2xl font-black text-primary sm:text-3xl">{{ reviewsCount() }}</div>
+      <div class="mt-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 sm:text-xs">Đánh giá</div>
+    </div>
+    <div class="rounded-[24px] border border-slate-100 bg-white p-4 text-center shadow-sm sm:p-5">
+      <div class="text-2xl font-black text-slate-900 sm:text-3xl">{{ favoritesCount() }}</div>
+      <div class="mt-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 sm:text-xs">Đã lưu</div>
+    </div>
+    <div class="rounded-[24px] border border-slate-100 bg-white p-4 text-center shadow-sm sm:p-5">
+      <div class="text-2xl font-black text-slate-900 sm:text-3xl">{{ user().points }}</div>
+      <div class="mt-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 sm:text-xs">Điểm</div>
+    </div>
+  </section>
+
+  <!-- Recent Activity -->
+  <section class="rounded-[28px] border border-slate-100 bg-white p-6 shadow-sm">
+    <div class="mb-5 flex items-center justify-between">
+      <div>
+        <h2 class="text-xl font-black text-slate-900">Hoạt động gần đây</h2>
+        <p class="mt-1 text-sm text-slate-500">Các đánh giá bạn vừa gửi trên ứng dụng.</p>
+      </div>
+      <a routerLink="/discover"
+        class="hidden items-center gap-1.5 text-sm font-bold text-primary sm:flex">
+        Khám phá thêm
+        <i class="fa-solid fa-arrow-right text-xs"></i>
       </a>
     </div>
-  </section>
 
-  <section class="mb-8 grid gap-4 md:grid-cols-3">
-    <div class="rounded-[26px] border border-slate-100 bg-white p-5 text-center shadow-sm">
-      <div class="text-3xl font-black text-primary">{{ reviewsCount() }}</div>
-      <div class="mt-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Da review</div>
-    </div>
-    <div class="rounded-[26px] border border-slate-100 bg-white p-5 text-center shadow-sm">
-      <div class="text-3xl font-black text-slate-900">{{ favoritesCount() }}</div>
-      <div class="mt-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Da luu</div>
-    </div>
-    <div class="rounded-[26px] border border-slate-100 bg-white p-5 text-center shadow-sm">
-      <div class="text-3xl font-black text-slate-900">{{ user().points }}</div>
-      <div class="mt-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Explorer points</div>
-    </div>
-  </section>
-
-  <section class="rounded-[30px] border border-slate-100 bg-white p-6 shadow-sm">
-    <div class="mb-4 flex items-center justify-between">
-      <div>
-        <h2 class="text-xl font-black text-slate-900">Hoat dong gan day</h2>
-        <p class="mt-1 text-sm text-slate-500">Review noi bo ma ban vua gui trong app.</p>
-      </div>
-      <a routerLink="/discover" class="text-sm font-semibold text-primary">Kham pha them</a>
-    </div>
-
-    <div *ngIf="recentReviews().length; else noReviews" class="space-y-4">
-      <div
-        *ngFor="let review of recentReviews()"
-        class="rounded-[24px] bg-slate-50 p-4"
-      >
-        <div class="flex items-center justify-between gap-4">
-          <div>
-            <h3 class="font-bold text-slate-900">{{ review.place_slug }}</h3>
-            <p class="mt-1 text-sm text-slate-500">{{ review.created_at | date:'dd/MM/yyyy HH:mm' }}</p>
+    <div *ngIf="recentReviews().length; else noReviews" class="space-y-3">
+      <div *ngFor="let review of recentReviews()"
+        class="group rounded-[22px] bg-slate-50 p-4 transition hover:bg-orange-50/50">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <a [routerLink]="['/detail', review.place_slug]"
+              class="font-bold text-slate-900 transition group-hover:text-primary">
+              {{ review.place_slug }}
+            </a>
+            <p class="mt-0.5 text-xs text-slate-400">
+              <i class="fa-regular fa-clock mr-1"></i>{{ review.created_at | date:'dd/MM/yyyy HH:mm' }}
+            </p>
           </div>
-          <span class="rounded-full bg-orange-50 px-3 py-1 text-sm font-semibold text-orange-600">
-            {{ review.rating }} ★
+          <span class="flex-shrink-0 rounded-full bg-orange-50 px-3 py-1 text-sm font-bold text-orange-600">
+            {{ review.rating }} <i class="fa-solid fa-star text-xs"></i>
           </span>
         </div>
-        <p class="mt-3 text-sm leading-6 text-slate-600">{{ review.comment }}</p>
+        <p class="mt-2.5 line-clamp-2 text-sm leading-6 text-slate-600">{{ review.comment }}</p>
       </div>
     </div>
 
     <ng-template #noReviews>
-      <div class="rounded-[24px] bg-slate-50 px-5 py-8 text-center text-sm leading-6 text-slate-500">
-        Ban chua gui review nao. Thu mo mot dia diem va viet cam nhan de profile sinh dong hon.
+      <div class="rounded-[22px] bg-slate-50 px-5 py-10 text-center">
+        <i class="fa-regular fa-comment-dots mb-3 text-3xl text-slate-300"></i>
+        <p class="text-sm leading-6 text-slate-500">
+          Bạn chưa gửi đánh giá nào.<br />
+          Hãy khám phá một địa điểm và chia sẻ cảm nhận!
+        </p>
+        <a routerLink="/discover"
+          class="mt-4 inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800">
+          <i class="fa-solid fa-compass"></i>
+          Khám phá ngay
+        </a>
       </div>
     </ng-template>
   </section>

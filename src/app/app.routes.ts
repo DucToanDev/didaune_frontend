@@ -6,6 +6,7 @@ import { Home } from './features/home/home';
 import { List } from './features/list/list';
 import { MapPage } from './features/map-page/map-page';
 import { Planner } from './features/planner/planner';
+import { PartnerRegister } from './features/partner-register/partner-register';
 import { Profile } from './features/profile/profile';
 import { Reviews } from './features/reviews/reviews';
 import { UserShell } from './layout/user-shell';
@@ -20,6 +21,7 @@ export const routes: Routes = [
       { path: 'list', component: List, title: 'Ket qua tim kiem' },
       { path: 'map', component: MapPage, title: 'Ban do dia diem' },
       { path: 'planner', component: Planner, title: 'Len lich trinh AI' },
+      { path: 'partner/register', component: PartnerRegister, title: 'Dang ky doi tac' },
       { path: 'favorite', component: Favorite, title: 'Yeu thich' },
       { path: 'detail/:slug', component: Detail, title: 'Chi tiet' },
       { path: 'profile', component: Profile, title: 'Ho so' },

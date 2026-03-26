@@ -1,0 +1,8 @@
+.gallery-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.gallery-scroll::-webkit-scrollbar {
+  display: none;
+}

@@ -11,11 +11,12 @@ import {
 } from '../../core/models/app.models';
 import { DataService } from '../../core/services/data.service';
 import { Router, RouterModule } from '@angular/router';
+import { DragScrollDirective } from '../../shared/ui/drag-scroll.directive';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, DragScrollDirective],
   templateUrl: './home.html',
   styleUrl: './home.css',
 })
@@ -80,10 +81,6 @@ export class Home implements OnInit {
     this.filterPlacesByHomeCategory(this.nearbyPlaces())
   );
 
-  filteredRecentViewedPlaces = computed(() =>
-    this.filterPlacesByHomeCategory(this.recentViewedPlaces())
-  );
-
   marqueeCategories = computed(() => {
     const categories = this.topCategories();
     return categories.length ? [...categories, ...categories] : [];
@@ -95,7 +92,16 @@ export class Home implements OnInit {
   });
 
   suggestedPlaces = computed(() =>
-    this.shufflePlaces(this.filteredFeaturedPlaces().filter((place) => place.rating >= 4)).slice(0, 8),
+    this.shufflePlaces(
+      this.uniquePlacesById([
+        ...this.filteredFeaturedPlaces().filter((place) => place.rating >= 4),
+        ...this.filteredTrendingPlaces().filter((place) => place.rating >= 4),
+        ...this.filterPlacesByHomeCategory(this.newPlaces()).filter((place) => place.rating >= 4),
+        ...this.filteredNearbyPlaces().filter((place) => place.rating >= 4),
+        ...this.filteredFeaturedPlaces(),
+        ...this.filteredTrendingPlaces(),
+      ]),
+    ).slice(0, 8),
   );
 
   displayLocationLabel = computed(() => {
@@ -256,6 +262,19 @@ export class Home implements OnInit {
     return shuffled;
   }
 
+  private uniquePlacesById(places: Place[]): Place[] {
+    const seen = new Set<string>();
+
+    return places.filter((place) => {
+      if (seen.has(place.id)) {
+        return false;
+      }
+
+      seen.add(place.id);
+      return true;
+    });
+  }
+
   getCategoryIcon(categoryName: string): string {
     const normalized = categoryName.toLowerCase();
 
@@ -311,18 +330,14 @@ export class Home implements OnInit {
     this.dataService.toggleFavorite(slug);
   }
 
-  getSuggestedHours(place: Place): string | null {
+  getSuggestedHours(place: Place): string {
     const firstHour = place.hours.find((hour) => hour.times.length > 0);
 
     if (!firstHour) {
-      return null;
+      return 'Chưa cập nhật';
     }
 
-    return firstHour.times[0] ?? null;
-  }
-
-  hasSuggestedHours(place: Place): boolean {
-    return Boolean(this.getSuggestedHours(place));
+    return firstHour.times[0] ?? 'Chưa cập nhật';
   }
 
   formatDistanceKm(place: Place): string {
@@ -448,6 +463,7 @@ function displayCityLabel(cityName: string): string {
 
   return cityName;
 }
+
 
 
 

@@ -1,5 +1,6 @@
 <div class="p-4 lg:p-8 pb-24 md:pb-10 max-w-7xl mx-auto">
-  <section *ngIf="dataService.backendError()" class="mb-6 rounded-[28px] border border-red-200 bg-red-50 px-5 py-4 text-red-700 shadow-sm">
+  <section *ngIf="dataService.backendError()"
+    class="mb-6 rounded-[28px] border border-red-200 bg-red-50 px-5 py-4 text-red-700 shadow-sm">
     <div class="flex items-start gap-3">
       <i class="fa-solid fa-triangle-exclamation mt-1"></i>
       <div>
@@ -10,118 +11,115 @@
   </section>
 
   <div class="mb-5 flex items-end justify-between">
-      <div>
-        <h2 class="text-2xl font-black text-slate-900">Danh sach kham pha</h2>
-        <p class="mt-1 text-sm text-slate-500">
-          Luot xem theo phong cach discovery app, khong phai ket qua tim kiem.
-        </p>
-      </div>
-      <a routerLink="/map" class="hidden text-sm font-semibold text-primary sm:block">
-        Xem địa điểm gần bạn
-        <i class="fa-solid fa-arrow-right ml-1"></i>
-      </a>
+    <div>
+      <h2 class="text-2xl font-black text-slate-900">Danh sách khám phá</h2>
+      <p class="mt-1 text-sm text-slate-500">
+        Lựa chọn địa điểm theo ý của bạn.
+      </p>
     </div>
+    <a routerLink="/map"
+      class="hidden text-sm font-semibold text-primary sm:block">
+      Xem địa điểm gần bạn
+      <i class="fa-solid fa-arrow-right ml-1"></i>
+    </a>
+  </div>
 
-  <section class="mb-4 rounded-[28px] border border-slate-100 bg-white p-4 shadow-sm">
+  <section
+    class="mb-4 rounded-[28px] border border-slate-100 bg-white p-4 shadow-sm">
     <div class="grid gap-3 lg:grid-cols-3">
       <select
         (change)="setArea($event)"
         [value]="dataService.currentDistrictId()"
-        class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 outline-none"
-      >
-        <option value="all">Tat ca phuong/khu vuc</option>
-        <option *ngFor="let area of areas()" [value]="area.id">{{ area.name }}</option>
+        class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 outline-none">
+        <option value="all">Tất cả Phường/Khu vực</option>
+        <option *ngFor="let area of areas()" [value]="area.id">{{ area.name
+          }}</option>
       </select>
 
       <select
         (change)="setSort($event)"
         [value]="dataService.sortOption()"
-        class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 outline-none"
-      >
-        <option value="popular">Pho bien nhat</option>
-        <option value="rating">Danh gia cao nhat</option>
-        <option value="new">Moi cap nhat</option>
-        <option value="name">Ten A-Z</option>
+        class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 outline-none">
+        <option value="popular">Phổ biến nhất</option>
+        <option value="rating">Đánh giá cao nhất</option>
+        <option value="new">Mới cập nhật</option>
+        <option value="name">Tên A-Z</option>
       </select>
 
       <a
         routerLink="/planner"
-        class="flex items-center justify-center gap-2 rounded-2xl bg-orange-500 px-4 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-orange-600"
-      >
+        class="flex items-center justify-center gap-2 rounded-2xl bg-orange-500 px-4 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-orange-600">
         <i class="fa-solid fa-wand-magic-sparkles"></i>
-        Len lich trinh AI
+        Lên lịch trình AI
       </a>
     </div>
   </section>
 
- 
-
   <section class="mb-10">
 
     <div class="mb-6 flex flex-wrap items-center gap-3">
-    <button
-      type="button"
-      (click)="setCategory('all')"
-      [class]="dataService.selectedCategoryId() === 'all' ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 border border-slate-200'"
-      class="rounded-full px-4 py-2 text-sm font-semibold transition"
-    >
-      Tat ca
-    </button>
-    <button
-      *ngFor="let category of categories()"
-      type="button"
-      (click)="setCategory(category.id)"
-      [class]="dataService.selectedCategoryId() === category.id ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-slate-600 border-slate-200'"
-      class="rounded-full border px-4 py-2 text-sm font-semibold transition"
-    >
-      {{ category.name }}
-    </button>
-  </div>
+      <button
+        type="button"
+        (click)="setCategory('all')"
+        [class]="dataService.selectedCategoryId() === 'all' ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 border border-slate-200'"
+        class="rounded-full px-4 py-2 text-sm font-semibold transition">
+        Tat ca
+      </button>
+      <button
+        *ngFor="let category of categories()"
+        type="button"
+        (click)="setCategory(category.id)"
+        [class]="dataService.selectedCategoryId() === category.id ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-slate-600 border-slate-200'"
+        class="rounded-full border px-4 py-2 text-sm font-semibold transition">
+        {{ category.name }}
+      </button>
+    </div>
 
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+    <div
+      class="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4 xl:gap-6">
       <a
         *ngFor="let place of filteredPlaces()"
         [routerLink]="['/detail', place.slug]"
-        class="group rounded-[28px] border border-slate-100 bg-white p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
-      >
-        <div class="relative overflow-hidden rounded-[24px]">
-          <img
-            [src]="place.image"
-            [alt]="place.name"
-            class="h-60 w-full object-cover transition duration-500 group-hover:scale-105"
-          />
-          <button
-            type="button"
-            (click)="toggleFavorite($event, place.slug)"
-            class="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full bg-white/85 text-lg shadow-md backdrop-blur transition"
-            [class]="dataService.isFavorite(place.slug) ? 'text-rose-500' : 'text-slate-400'"
-          >
-            <i class="fa-solid fa-heart"></i>
-          </button>
+        class="suggested-card group relative flex flex-col gap-3 rounded-[1.35rem] border border-transparent bg-white p-3 shadow-sm transition hover:border-slate-100 hover:shadow-lg sm:gap-4 sm:rounded-3xl sm:p-4">
+        <button
+          type="button"
+          (click)="toggleFavorite($event, place.slug)"
+          class="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/55 text-sm backdrop-blur-sm transition sm:right-6 sm:top-6 sm:h-9 sm:w-9"
+          [class]="dataService.isFavorite(place.slug) ? 'text-rose-500' : 'hover:text-rose-500'">
+          <i class="fa-solid fa-heart"></i>
+        </button>
+
+        <img
+          [src]="place.image"
+          [alt]="place.name"
+          class="h-28 w-full rounded-[1rem] object-cover sm:h-52 sm:rounded-2xl" />
+
+        <div class="absolute left-4 top-4 z-10 sm:left-6 sm:top-6">
+          <span
+            class="flex items-center gap-1 rounded-full bg-white/55 px-2 py-1 text-[11px] font-semibold text-orange-500 backdrop-blur sm:rounded-lg sm:px-2.5 sm:text-sm">
+            <i class="fa-solid fa-star text-[10px] sm:text-xs"></i>
+            {{ place.rating }}
+          </span>
         </div>
 
-        <div class="mt-4">
-          <div class="flex items-center justify-between gap-3">
-            <h3 class="text-xl font-bold text-slate-900 transition group-hover:text-primary">
-              {{ place.name }}
-            </h3>
-            <span class="rounded-full bg-orange-50 px-3 py-1 text-sm font-semibold text-orange-600">
-              {{ place.rating }} ★
-            </span>
-          </div>
-
-          <p class="mt-2 text-sm text-slate-500">
-            <i class="fa-solid fa-location-dot mr-1"></i>
-            {{ place.area_name }}
+        <div class="flex flex-1 flex-col">
+          <h3
+            class="mb-1 mt-0.5 line-clamp-2 text-[0.95rem] font-bold leading-snug text-slate-800 transition group-hover:text-primary sm:mt-1 sm:text-lg sm:leading-tight">
+            {{ place.name }}
+          </h3>
+          <p
+            class="mb-2 text-xs text-slate-500 line-clamp-2 sm:mb-3 sm:text-sm sm:line-clamp-1">
+            <i class="fa-solid fa-location-dot mr-1 text-slate-400"></i>
+            {{ place.address }}
           </p>
-          <p class="mt-1 text-xs text-slate-400">{{ place.district_name }}</p>
-          <p class="mt-3 line-clamp-2 text-sm leading-6 text-slate-600">{{ place.description }}</p>
-
-          <div class="mt-4 flex flex-wrap gap-2">
+          <p class="mb-2 text-xs text-slate-500 sm:mb-3 sm:text-sm">
+            <i class="fa-regular fa-clock mr-1 text-slate-400"></i>
+            {{ getSuggestedHours(place) }}
+          </p>
+          <div class="mt-auto flex flex-wrap gap-1.5 sm:gap-2">
             <span
-              *ngFor="let label of place.category_labels"
-              class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600"
-            >
+              *ngFor="let label of place.category_labels.slice(0, 1)"
+              class="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600 sm:rounded-lg sm:px-2.5 sm:text-xs">
               {{ label }}
             </span>
           </div>
@@ -130,26 +128,43 @@
     </div>
   </section>
 
-  <section class="rounded-[30px] border border-slate-100 bg-white p-5 shadow-sm">
-    <div class="mb-4 flex items-center justify-between">
-      <div>
-        <h2 class="text-xl font-black text-slate-900">Moi cap nhat</h2>
-        <p class="mt-1 text-sm text-slate-500">Nhung dia diem co owner posts hoac du lieu moi hon.</p>
+  <div
+    class="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+    *ngIf="pagination().last_page > 1">
+    <p class="text-sm text-slate-500">
+      Hien thi {{ pagination().from || 0 }} - {{ pagination().to || 0 }} / {{
+      pagination().total }} dia diem
+    </p>
+
+    <div class="flex items-center gap-2">
+      <button
+        type="button"
+        (click)="goToPreviousPage()"
+        [disabled]="pagination().current_page <= 1 || loading()"
+        class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
+        Truoc
+      </button>
+
+      <div
+        class="flex flex-nowrap items-center gap-2 overflow-x-auto hide-scrollbar">
+        <button
+          *ngFor="let page of pageNumbers()"
+          type="button"
+          [disabled]="page === -1 || loading()"
+          (click)="goToPage(page)"
+          [class]="page === pagination().current_page ? 'bg-slate-900 text-white border-slate-900' : page === -1 ? 'bg-transparent text-slate-400 border-transparent' : 'bg-white text-slate-600 border-slate-200'"
+          class="min-w-10 rounded-xl border px-3 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50">
+          {{ page === -1 ? '...' : page }}
+        </button>
       </div>
-    </div>
 
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <a
-        *ngFor="let place of latestPlaces()"
-        [routerLink]="['/detail', place.slug]"
-        class="rounded-[24px] bg-slate-50 p-4 transition hover:bg-orange-50"
-      >
-        <div class="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Moi</div>
-        <h3 class="mt-2 text-lg font-bold text-slate-900">{{ place.name }}</h3>
-        <p class="mt-2 text-sm text-slate-500">{{ place.area_name }}</p>
-        <p class="mt-1 text-xs text-slate-400">{{ place.district_name }}</p>
-      </a>
+      <button
+        type="button"
+        (click)="goToNextPage()"
+        [disabled]="pagination().current_page >= pagination().last_page || loading()"
+        class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
+        Sau
+      </button>
     </div>
-  </section>
+  </div>
 </div>
-

@@ -1,8 +1,16 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { toObservable } from '@angular/core/rxjs-interop';
 import { RouterModule } from '@angular/router';
-import { Category, District, Place } from '../../core/models/app.models';
+import {
+  Category,
+  District,
+  PaginationMeta,
+  Place,
+} from '../../core/models/app.models';
 import { DataService } from '../../core/services/data.service';
+import { LocationApiService } from '../../core/services/location-api.service';
+import { combineLatest, startWith, switchMap } from 'rxjs';
 
 @Component({
   selector: 'app-discover',
@@ -13,55 +21,130 @@ import { DataService } from '../../core/services/data.service';
 })
 export class Discover {
   public dataService = inject(DataService);
+  private locationApi = inject(LocationApiService);
 
   places = signal<Place[]>([]);
   categories = signal<Category[]>([]);
   areaOptions = signal<District[]>([]);
+  pagination = signal<PaginationMeta>({
+    current_page: 1,
+    per_page: 100,
+    total: 0,
+    last_page: 1,
+    from: null,
+    to: null,
+  });
+  loading = signal(true);
   areas = computed(() =>
-    this.areaOptions().filter((area) => area.city_id === this.dataService.currentCityId())
+    this.areaOptions().filter(
+      (area) => area.city_id === this.dataService.currentCityId(),
+    ),
   );
+  filteredPlaces = computed(() => this.places());
+  latestPlaces = computed(() => this.filteredPlaces().slice(0, 4));
+  pageNumbers = computed(() => {
+    const totalPages = this.pagination().last_page;
+    const currentPage = this.pagination().current_page;
 
-  filteredPlaces = computed(() => {
-    const categoryId = this.dataService.selectedCategoryId();
-    const areaId = this.dataService.currentDistrictId();
-    const amenityId = this.dataService.selectedAmenityId();
-    const wardCode = this.dataService.currentWardCode().trim();
-    const wardName = this.dataService.currentWardName().trim().toLowerCase();
-    const sorted = this.sortPlaces(
-      this.places().filter((place) => {
-        const byCity = place.city_id === this.dataService.currentCityId();
-        const byArea = areaId === 'all' || place.area_id === areaId;
-        const byCategory = categoryId === 'all' || place.categories.includes(categoryId);
-        const byAmenity = amenityId === 'all' || place.amenities.includes(amenityId);
-        const byWard = !wardName || !!wardCode || place.ward_name.toLowerCase().includes(wardName);
-        return byCity && byArea && byCategory && byAmenity && byWard;
-      })
-    );
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }
 
-    return sorted;
+    if (currentPage <= 4) {
+      return [1, 2, 3, 4, 5, -1, totalPages];
+    }
+
+    if (currentPage >= totalPages - 3) {
+      return [
+        1,
+        -1,
+        totalPages - 4,
+        totalPages - 3,
+        totalPages - 2,
+        totalPages - 1,
+        totalPages,
+      ];
+    }
+
+    return [
+      1,
+      -1,
+      currentPage - 1,
+      currentPage,
+      currentPage + 1,
+      -1,
+      totalPages,
+    ];
   });
 
-  trendingPlaces = computed(() => this.filteredPlaces().slice(0, 3));
-  latestPlaces = computed(() => this.sortPlaces([...this.filteredPlaces()], 'new').slice(0, 4));
-
   constructor() {
-    this.dataService.getPlaces().subscribe((places) => this.places.set(places));
-    this.dataService.getCategories().subscribe((categories) => this.categories.set(categories));
-    this.dataService.getAreaOptions().subscribe((areas) => this.areaOptions.set(areas));
+    this.dataService
+      .getCategories()
+      .subscribe((categories) => this.categories.set(categories));
+    this.dataService
+      .getAreaOptions()
+      .subscribe((areas) => this.areaOptions.set(areas));
+
+    combineLatest([
+      toObservable(this.dataService.currentCityId).pipe(
+        startWith(this.dataService.currentCityId()),
+      ),
+      toObservable(this.dataService.currentWardCode).pipe(
+        startWith(this.dataService.currentWardCode()),
+      ),
+      toObservable(this.dataService.currentDistrictId).pipe(
+        startWith(this.dataService.currentDistrictId()),
+      ),
+      toObservable(this.dataService.selectedCategoryId).pipe(
+        startWith(this.dataService.selectedCategoryId()),
+      ),
+      toObservable(this.dataService.sortOption).pipe(
+        startWith(this.dataService.sortOption()),
+      ),
+      toObservable(computed(() => this.pagination().current_page)).pipe(
+        startWith(this.pagination().current_page),
+      ),
+    ])
+      .pipe(
+        switchMap(([cityId, wardCode, areaId, categoryId, sort, page]) => {
+          this.loading.set(true);
+          return this.locationApi.fetchLocationsPaginated({
+            cityId,
+            wardCode: wardCode.trim(),
+            areaId,
+            categoryId,
+            sort,
+            page,
+            perPage: this.pagination().per_page,
+          });
+        }),
+      )
+      .subscribe((result) => {
+        this.places.set(result.data);
+        this.pagination.set(result.meta);
+        this.loading.set(false);
+      });
   }
 
   setCategory(categoryId: string) {
     this.dataService.selectedCategoryId.set(categoryId);
+    this.goToPage(1);
   }
 
   setArea(event: Event) {
     const value = (event.target as HTMLSelectElement).value;
     this.dataService.currentDistrictId.set(value);
+    this.goToPage(1);
   }
 
   setSort(event: Event) {
-    const value = (event.target as HTMLSelectElement).value as 'popular' | 'rating' | 'name' | 'new';
+    const value = (event.target as HTMLSelectElement).value as
+      | 'popular'
+      | 'rating'
+      | 'name'
+      | 'new';
     this.dataService.sortOption.set(value);
+    this.goToPage(1);
   }
 
   toggleFavorite(event: Event, slug: string) {
@@ -70,24 +153,35 @@ export class Discover {
     this.dataService.toggleFavorite(slug);
   }
 
-  private sortPlaces(
-    places: Place[],
-    sortBy: 'popular' | 'rating' | 'name' | 'new' = this.dataService.sortOption()
-  ) {
-    return [...places].sort((first, second) => {
-      if (sortBy === 'rating') {
-        return second.rating - first.rating;
-      }
+  getSuggestedHours(place: Place): string {
+    const firstHour = place.hours.find((hour) => hour.times.length > 0);
 
-      if (sortBy === 'name') {
-        return first.name.localeCompare(second.name);
-      }
+    if (!firstHour) {
+      return 'Chưa cập nhật';
+    }
 
-      if (sortBy === 'new') {
-        return Number(second.is_new) - Number(first.is_new) || second.review_count - first.review_count;
-      }
+    return firstHour.times[0] ?? 'Chưa cập nhật';
+  }
 
-      return second.review_count - first.review_count || second.rating - first.rating;
-    });
+  goToPage(page: number) {
+    const lastPage = this.pagination().last_page;
+    const nextPage = Math.min(Math.max(page, 1), Math.max(lastPage, 1));
+
+    if (nextPage === this.pagination().current_page) {
+      return;
+    }
+
+    this.pagination.update((current) => ({
+      ...current,
+      current_page: nextPage,
+    }));
+  }
+
+  goToPreviousPage() {
+    this.goToPage(this.pagination().current_page - 1);
+  }
+
+  goToNextPage() {
+    this.goToPage(this.pagination().current_page + 1);
   }
 }

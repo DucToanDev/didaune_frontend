@@ -3,11 +3,19 @@ import { RouterOutlet } from '@angular/router';
 import { Aside } from '../shared/ui/aside/aside';
 import { Header } from '../shared/ui/header/header';
 import { Tabbar } from '../shared/ui/tabbar/tabbar';
+import { CommonModule } from '@angular/common';
+import { DataService } from '../core/services/data.service';
 
 @Component({
   selector: 'app-user-shell',
   standalone: true,
-  imports: [RouterOutlet, Header, Aside, Tabbar],
+  imports: [CommonModule, RouterOutlet, Header, Aside, Tabbar],
   templateUrl: './user-shell.html',
 })
-export class UserShell {}
+export class UserShell {
+  constructor(public dataService: DataService) {}
+
+  closeMobileSidebar() {
+    this.dataService.mobileSidebarOpen.set(false);
+  }
+}

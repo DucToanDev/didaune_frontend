@@ -78,7 +78,13 @@
   }
 
   .suggested-card:hover {
-    transform: none;
+    transform: translateY(-2px);
+    box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
+  }
+
+  .suggested-card:active {
+    transform: translateY(-1px) scale(0.995);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
   }
 
   .suggested-card img {
@@ -87,6 +93,11 @@
 
   .trending-card {
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  }
+
+  .trending-grid {
+    margin-inline: -0.25rem;
+    padding-inline: 0.25rem;
   }
 }
 

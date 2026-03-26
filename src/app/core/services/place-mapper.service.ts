@@ -103,6 +103,8 @@ export interface BackendLocation {
   longitude?: string | number | null;
   distance?: string | number | null;
   featured_image?: string | null;
+  owner_id?: string | null;
+  owner_name?: string | null;
   can_claim?: boolean;
   is_temporarily_closed?: boolean;
   is_permanently_closed?: boolean;
@@ -169,8 +171,8 @@ export class PlaceMapperService {
       reviewer_profile: review.reviewer_profile ?? null,
       is_local_guide: review.is_local_guide ?? false,
     }));
-    const categorySource = `${location.main_category ?? ''} ${sourceCategories.join(' ')} ${location.description ?? ''}`;
-    const categoryIds = this.mapCategoriesFromSource(categorySource);
+    const categorySource = `${location.name ?? ''} ${location.main_category ?? ''} ${sourceCategories.join(' ')} ${location.description ?? ''}`;
+    const categoryIds = this.mapCategoriesFromBackendLocation(location, rawPayload, categorySource);
     const amenityOptions = this.readAmenityOptions(location, rawPayload);
     const amenityIds = this.resolveAmenityIds(
       amenityOptions,
@@ -256,7 +258,8 @@ export class PlaceMapperService {
       distance_km: this.toNumber(location.distance) ?? null,
       hours,
       highlights: sourceCategories.slice(0, 5),
-      owner_name: this.readOwnerName(rawPayload),
+      owner_id: this.readString(location.owner_id) ?? this.readOwnerId(rawPayload),
+      owner_name: location.owner_name ?? this.readOwnerName(rawPayload),
       owner_posts: (location.owner_posts ?? []).slice(0, 3).map((post) => ({
         id: post.id,
         text: post.post_text ?? null,
@@ -382,6 +385,7 @@ export class PlaceMapperService {
       distance_km: null,
       hours: location.hours ?? [],
       highlights: this.buildHighlights(location),
+      owner_id: location.owner?.id ?? null,
       owner_name: location.owner?.name ?? null,
       owner_posts: (location.owner_posts ?? []).slice(0, 3).map((post, postIndex) => ({
         id: post.post_id ?? `${location.place_id}-post-${postIndex}`,
@@ -442,6 +446,44 @@ export class PlaceMapperService {
     return this.inferCategoryIds(source, CATEGORY_CONFIG.map((category) => category.id));
   }
 
+  private mapCategoriesFromBackendLocation(
+    location: BackendLocation,
+    rawPayload: Record<string, unknown>,
+    source: string
+  ): string[] {
+    const normalized = this.normalizeSearchText(source);
+    const matches = new Set<string>();
+    const primaryCategoryId = this.resolvePrimaryCategoryFromBackendLocation(
+      location,
+      rawPayload,
+      normalized
+    );
+
+    if (primaryCategoryId) {
+      matches.add(primaryCategoryId);
+    } else {
+      matches.add('travel');
+    }
+
+    if (this.includesAny(normalized, ['romantic', 'date', 'couple', 'hen ho', 'lounge', 'cocktail', 'wine'])) {
+      matches.add('date');
+    }
+
+    if (this.includesAny(normalized, ['group', 'family', 'friends', 'party', 'bbq', 'lau', 'pub', 'beer'])) {
+      matches.add('group');
+    }
+
+    if (this.includesAny(normalized, ['work', 'study', 'cowork', 'wifi', 'quiet', 'yen tinh'])) {
+      matches.add('work');
+    }
+
+    if (this.includesAny(normalized, ['photo', 'check in', 'check-in', 'decor', 'view', 'art', 'studio', 'song ao'])) {
+      matches.add('photo');
+    }
+
+    return CATEGORY_CONFIG.map((category) => category.id).filter((id) => matches.has(id));
+  }
+
   private inferCategoryIds(source: string, ids: string[]): string[] {
     const normalized = this.normalizeSearchText(source);
     const matches = new Set<string>();
@@ -495,6 +537,68 @@ export class PlaceMapperService {
     }
 
     return null;
+  }
+
+  private resolvePrimaryCategoryFromBackendLocation(
+    location: BackendLocation,
+    rawPayload: Record<string, unknown>,
+    normalizedSource: string
+  ): string | null {
+    const hasAccommodationFields =
+      this.toNumber(location.hotel_stars) !== undefined ||
+      this.toNumber(location.sleeps) !== undefined ||
+      this.toNumber(location.bedrooms) !== undefined ||
+      this.toNumber(location.beds) !== undefined ||
+      this.toNumber(location.bathrooms) !== undefined ||
+      this.toNumber(location.min_nights) !== undefined ||
+      Boolean(this.readString(location.checkin_time)) ||
+      Boolean(this.readString(location.checkout_time)) ||
+      Boolean(this.readString(location.checkin_date)) ||
+      Boolean(this.readString(location.checkout_date)) ||
+      Array.isArray(location.booking_platforms_json) ||
+      Array.isArray(rawPayload['booking_platforms']);
+
+    if (
+      this.includesAny(normalizedSource, [
+        'homestay',
+        'guest house',
+        'guesthouse',
+        'hostel',
+        'villa',
+        'bungalow',
+        'apartment rental',
+        'apartment',
+        'rental',
+        'nha nghi',
+        'can ho dich vu',
+      ])
+    ) {
+      return 'homestay';
+    }
+
+    if (
+      this.includesAny(normalizedSource, [
+        'hotel',
+        'khach san',
+        'resort',
+        'motel',
+        'lodging',
+        'accommodation',
+        'luu tru',
+      ])
+    ) {
+      return 'hotel';
+    }
+
+    if (hasAccommodationFields) {
+      if (this.includesAny(normalizedSource, ['villa', 'apartment', 'guest house', 'guesthouse', 'hostel', 'homestay'])) {
+        return 'homestay';
+      }
+
+      return 'hotel';
+    }
+
+    return this.resolvePrimaryCategory(normalizedSource);
   }
 
   private includesAny(source: string, keywords: string[]): boolean {
@@ -693,6 +797,26 @@ export class PlaceMapperService {
     return typeof (owner as { name?: unknown }).name === 'string'
       ? ((owner as { name: string }).name ?? null)
       : null;
+  }
+
+  private readOwnerId(rawPayload: Record<string, unknown>): string | null {
+    const owner = rawPayload['owner'];
+
+    if (!owner || typeof owner !== 'object' || owner === null) {
+      return null;
+    }
+
+    const ownerId = (owner as { id?: unknown }).id;
+
+    if (typeof ownerId === 'string' && ownerId.trim()) {
+      return ownerId.trim();
+    }
+
+    if (typeof ownerId === 'number' && Number.isFinite(ownerId)) {
+      return String(ownerId);
+    }
+
+    return null;
   }
 
   private readAmenityOptions(

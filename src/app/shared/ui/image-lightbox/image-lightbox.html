@@ -1,0 +1,69 @@
+<div
+  *ngIf="isOpen()"
+  class="lightbox-overlay"
+  (click)="onBackdropClick($event)"
+  (keydown)="onKeydown($event)"
+  tabindex="0"
+  #lightboxOverlay
+>
+  <!-- Close button -->
+  <button
+    type="button"
+    (click)="close.emit()"
+    class="absolute right-4 top-4 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20"
+  >
+    <i class="fa-solid fa-xmark text-lg"></i>
+  </button>
+
+  <!-- Counter -->
+  <div class="absolute left-4 top-4 z-50 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md">
+    {{ currentIndex() + 1 }} / {{ images().length }}
+  </div>
+
+  <!-- Previous arrow -->
+  <button
+    *ngIf="images().length > 1"
+    type="button"
+    (click)="prev(); $event.stopPropagation()"
+    class="absolute left-3 top-1/2 z-50 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 md:left-6 md:h-14 md:w-14"
+  >
+    <i class="fa-solid fa-chevron-left text-lg"></i>
+  </button>
+
+  <!-- Next arrow -->
+  <button
+    *ngIf="images().length > 1"
+    type="button"
+    (click)="next(); $event.stopPropagation()"
+    class="absolute right-3 top-1/2 z-50 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 md:right-6 md:h-14 md:w-14"
+  >
+    <i class="fa-solid fa-chevron-right text-lg"></i>
+  </button>
+
+  <!-- Image container -->
+  <div
+    class="lightbox-image-container"
+    (touchstart)="onTouchStart($event)"
+    (touchend)="onTouchEnd($event)"
+  >
+    <img
+      [src]="images()[currentIndex()]"
+      alt="Lightbox image"
+      class="lightbox-image"
+      (click)="$event.stopPropagation()"
+    />
+  </div>
+
+  <!-- Thumbnail strip -->
+  <div *ngIf="images().length > 1" class="absolute bottom-4 left-1/2 z-50 flex -translate-x-1/2 gap-2 overflow-x-auto rounded-2xl bg-black/40 p-2 backdrop-blur-md">
+    <button
+      *ngFor="let img of images(); let i = index"
+      type="button"
+      (click)="goTo(i); $event.stopPropagation()"
+      class="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl transition-all md:h-14 md:w-14"
+      [class]="i === currentIndex() ? 'ring-2 ring-white ring-offset-1 ring-offset-black/50 opacity-100' : 'opacity-50 hover:opacity-80'"
+    >
+      <img [src]="img" alt="" class="h-full w-full object-cover" loading="lazy" />
+    </button>
+  </div>
+</div>

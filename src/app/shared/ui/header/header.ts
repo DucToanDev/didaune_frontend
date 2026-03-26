@@ -256,6 +256,10 @@ export class Header implements OnInit {
     this.mobileSearchOpen.set(false);
   }
 
+  toggleMobileSidebar() {
+    this.dataService.mobileSidebarOpen.update((open) => !open);
+  }
+
   submitAuth() {
     const mode = this.authMode();
     const name = this.authName().trim();

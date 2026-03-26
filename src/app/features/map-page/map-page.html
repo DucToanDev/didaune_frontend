@@ -1,50 +1,117 @@
-<div class="mx-auto max-w-7xl p-4 pb-24 lg:p-8 md:pb-10">
-  <section class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+﻿<div class="mx-auto max-w-7xl p-4 pb-24 lg:p-8 md:pb-10">
+  <section
+    class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
     <div>
       <h1 class="mt-2 text-3xl font-black text-slate-900">Bản đồ địa điểm</h1>
       <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-        Danh sách các địa điểm hiện trên bản đồ. Mỗi trang chỉ hiển thị một phần để dễ xem hơn.
+        Danh sách các địa điểm hiện trên bản đồ. Mỗi trang chỉ hiển thị một phần
+        để dễ xem hơn.
       </p>
     </div>
 
-    <a routerLink="/discover" class="inline-flex items-center gap-2 text-sm font-semibold text-primary">
+    <a routerLink="/discover"
+      class="inline-flex items-center gap-2 text-sm font-semibold text-primary">
       Về trang danh sách
       <i class="fa-solid fa-arrow-right"></i>
     </a>
   </section>
 
-  <section class="mb-8 overflow-hidden rounded-[32px] border border-slate-100 bg-white p-4 shadow-sm">
+  <section
+    class="mb-6 rounded-[24px] border border-slate-100 bg-white p-4 shadow-sm">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h2 class="text-base font-black text-slate-900">Danh mục trong bán kính
+          5km</h2>
+        <p class="mt-1 text-xs text-slate-500">
+          {{ nearbyTotalPlaces }} địa điểm gần vị trí của bạn
+        </p>
+      </div>
+      <button
+        type="button"
+        (click)="requestCurrentLocation()"
+        [disabled]="locating()"
+        class="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white">
+        <i
+          [class]="locating() ? 'fa-solid fa-spinner animate-spin' : 'fa-solid fa-location-crosshairs'"></i>
+        {{ locating() ? 'Đang lấy vị trí...' : 'Cập nhật vị trí' }}
+      </button>
+    </div>
+
+    <div *ngIf="nearbyCategorySummaries().length; else noNearbyCategories"
+      class="mt-4 flex flex-wrap gap-2">
+      <button
+        type="button"
+        (click)="setNearbyCategory('all')"
+        class="nearby-category-chip inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition"
+        [class]="selectedNearbyCategory() === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'">
+        <span>Tất cả</span>
+        <span
+          class="rounded-full px-2 py-0.5 text-[11px] font-bold"
+          [class]="selectedNearbyCategory() === 'all' ? 'bg-white/20 text-white' : 'bg-white text-slate-600'">
+          {{ nearbyTotalPlaces }}
+        </span>
+      </button>
+
+      <button
+        *ngFor="let category of nearbyCategorySummaries()"
+        type="button"
+        (click)="setNearbyCategory(category.id)"
+        class="nearby-category-chip inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition"
+        [class]="selectedNearbyCategory() === category.id ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'">
+        <span>{{ category.name }}</span>
+        <span
+          class="rounded-full px-2 py-0.5 text-[11px] font-bold"
+          [class]="selectedNearbyCategory() === category.id ? 'bg-white/20 text-white' : 'bg-white text-slate-600'">
+          {{ category.count }}
+        </span>
+      </button>
+    </div>
+
+    <ng-template #noNearbyCategories>
+      <p class="mt-4 text-xs text-slate-500">
+        Chưa có dữ liệu vị trí hoặc bạn chưa cấp quyền.
+      </p>
+    </ng-template>
+  </section>
+
+  <section
+    class="mb-8 overflow-hidden rounded-[32px] border border-slate-100 bg-white p-4 shadow-sm">
     <div class="relative">
       <div #mapContainer class="leaflet-map h-[420px] rounded-[28px]"></div>
 
-      <div class="absolute bottom-4 left-4 z-20 rounded-2xl bg-white/85 px-4 py-3 text-xs text-slate-600 shadow-sm backdrop-blur">
-        Trang {{ currentPage() }} / {{ totalPages() }} · {{ paginatedGeocodedPlaces().length }} địa điểm có tọa độ
+      <div
+        class="absolute bottom-4 left-4 z-20 rounded-2xl bg-white/85 px-4 py-3 text-xs text-slate-600 shadow-sm backdrop-blur">
+        Trang {{ currentPage() }} / {{ totalPages() }} · {{
+        paginatedGeocodedPlaces().length }} địa điểm có tọa độ
       </div>
 
       <div
         *ngIf="selectedPlace() as selected"
-        class="map-selected-card absolute bottom-4 right-4 z-30 max-w-[280px] rounded-[24px] border border-slate-200 bg-white/95 p-4 shadow-lg backdrop-blur"
-      >
+        class="map-selected-card absolute bottom-4 right-4 z-30 max-w-[280px] rounded-[24px] border border-slate-200 bg-white/95 p-4 shadow-lg backdrop-blur">
         <div class="flex gap-3">
-          <img [src]="selected.image" [alt]="selected.name" class="h-16 w-16 rounded-2xl object-cover" />
+          <img [src]="selected.image" [alt]="selected.name"
+            class="h-16 w-16 rounded-2xl object-cover" />
           <div class="min-w-0 flex-1">
             <!-- <p class="text-xs font-semibold uppercase tracking-[0.18em] text-orange-500">Đang chọn</p> -->
-            <h2 class="mt-1 line-clamp-2 text-sm font-bold text-slate-900">{{ selected.name }}</h2>
-            <p class="mt-1 line-clamp-2 text-xs text-slate-500">{{ selected.address }}</p>
+            <h2 class="mt-1 line-clamp-2 text-sm font-bold text-slate-900">{{
+              selected.name }}</h2>
+            <p class="mt-1 line-clamp-2 text-xs text-slate-500">{{
+              selected.address }}</p>
           </div>
         </div>
 
         <div class="mt-3 flex items-center justify-between gap-3 text-sm">
-          <span class="font-semibold text-orange-600">{{ selected.rating }} ★</span>
-          <span class="text-xs text-slate-500">{{ selected.category_labels[0] || selected.city_name }}</span>
+          <span class="font-semibold text-orange-600">{{ selected.rating }}
+            ★</span>
+          <span class="text-xs text-slate-500">{{ selected.category_labels[0] ||
+            selected.city_name }}</span>
         </div>
 
         <div class="mt-3 flex gap-2">
           <button
             type="button"
             (click)="openPlace(selected)"
-            class="flex-1 rounded-2xl bg-slate-900 px-3 py-2 text-sm font-bold text-white"
-          >
+            class="flex-1 rounded-2xl bg-slate-900 px-3 py-2 text-sm font-bold text-white">
             Xem chi tiết
           </button>
           <a
@@ -52,8 +119,7 @@
             [href]="selected.google_maps_link"
             target="_blank"
             rel="noreferrer"
-            class="rounded-2xl border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700"
-          >
+            class="rounded-2xl border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700">
             Map
           </a>
         </div>
@@ -65,24 +131,24 @@
     <div
       *ngFor="let place of paginatedPlaces()"
       (click)="selectPlace(place)"
-      class="rounded-[28px] border border-slate-100 bg-white p-4 shadow-sm transition"
+      class="map-place-card rounded-[28px] border border-slate-100 bg-white p-4 shadow-sm transition"
       [class.ring-2]="selectedPlace()?.slug === place.slug"
-      [class.ring-orange-400]="selectedPlace()?.slug === place.slug"
-    >
+      [class.ring-orange-400]="selectedPlace()?.slug === place.slug">
       <div class="flex gap-4">
-        <img [src]="place.image" [alt]="place.name" class="h-24 w-24 rounded-2xl object-cover" />
+        <img [src]="place.image" [alt]="place.name"
+          class="h-24 w-24 rounded-2xl object-cover" />
         <div class="min-w-0 flex-1">
           <h2 class="text-lg font-bold text-slate-900">{{ place.name }}</h2>
           <p class="mt-1 text-sm text-slate-500">{{ place.district_name }}</p>
-          <p class="mt-2 text-sm font-medium text-orange-600">{{ place.rating }} ★</p>
+          <p class="mt-2 text-sm font-medium text-orange-600">{{ place.rating }}
+            ★</p>
         </div>
       </div>
 
       <div class="mt-4 flex flex-wrap gap-2">
         <span
           *ngFor="let label of place.category_labels"
-          class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600"
-        >
+          class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
           {{ label }}
         </span>
       </div>
@@ -91,8 +157,7 @@
         <a
           [routerLink]="['/detail', place.slug]"
           (click)="$event.stopPropagation()"
-          class="flex-1 rounded-2xl bg-slate-900 px-4 py-3 text-center text-sm font-bold text-white"
-        >
+          class="flex-1 rounded-2xl bg-slate-900 px-4 py-3 text-center text-sm font-bold text-white">
           Xem chi tiết
         </a>
         <a
@@ -101,31 +166,30 @@
           (click)="$event.stopPropagation()"
           target="_blank"
           rel="noreferrer"
-          class="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-center text-sm font-bold text-slate-700"
-        >
+          class="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-center text-sm font-bold text-slate-700">
           Mở map ngoài
         </a>
       </div>
     </div>
   </section>
 
-  <section *ngIf="totalPages() > 1" class="mt-8 flex items-center justify-center">
-    <div class="flex items-center gap-2 rounded-[24px] border border-slate-200 bg-white px-3 py-2 shadow-sm">
+  <section *ngIf="totalPages() > 1"
+    class="mt-8 flex items-center justify-center">
+    <div
+      class="flex items-center gap-2 rounded-[24px] border border-slate-200 bg-white px-3 py-2 shadow-sm">
       <button
         type="button"
         (click)="previousPage()"
         [disabled]="currentPage() === 1"
         class="flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-bold text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-35"
-        aria-label="Trang trước"
-      >
+        aria-label="Trang trước">
         <i class="fa-solid fa-chevron-left"></i>
       </button>
 
       <ng-container *ngFor="let item of paginationItems()">
         <span
           *ngIf="item === 'ellipsis'"
-          class="px-1 text-sm font-semibold tracking-[0.2em] text-slate-400"
-        >
+          class="px-1 text-sm font-semibold tracking-[0.2em] text-slate-400">
           ...
         </span>
 
@@ -138,8 +202,7 @@
           [class.text-white]="currentPage() === item"
           [class.shadow-sm]="currentPage() === item"
           [class.text-slate-600]="currentPage() !== item"
-          [class.hover:bg-slate-100]="currentPage() !== item"
-        >
+          [class.hover:bg-slate-100]="currentPage() !== item">
           {{ item }}
         </button>
       </ng-container>
@@ -149,8 +212,7 @@
         (click)="nextPage()"
         [disabled]="currentPage() === totalPages()"
         class="flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-bold text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-35"
-        aria-label="Trang sau"
-      >
+        aria-label="Trang sau">
         <i class="fa-solid fa-chevron-right"></i>
       </button>
     </div>

@@ -122,7 +122,7 @@ export class AdminHome {
   readonly menus = [
     { id: 'overview', label: 'Tong quan', icon: 'fa-th-large' },
     { id: 'locations', label: 'Dia diem', icon: 'fa-map-marker-alt', route: '/admin/locations' },
-    { id: 'partners', label: 'Doi tac', icon: 'fa-store' },
+    { id: 'partners', label: 'Doi tac', icon: 'fa-store', route: '/admin/partners' },
     { id: 'reviews', label: 'Danh gia', icon: 'fa-star' },
     { id: 'insights', label: 'AI Insights', icon: 'fa-magic' },
   ];

@@ -28,6 +28,15 @@
           <i [class]="nearbyLoading() ? 'fa-solid fa-spinner animate-spin' : 'fa-solid fa-location-crosshairs'"></i>
           Quet nearby
         </button>
+        <button
+          type="button"
+          disabled
+          title="Cho backend CRUD sau nay"
+          class="inline-flex cursor-not-allowed items-center gap-2 rounded-2xl bg-orange-500/50 px-4 py-3 text-sm font-semibold text-white opacity-70"
+        >
+          <i class="fa-solid fa-plus"></i>
+          Them dia diem
+        </button>
       </div>
     </header>
 
@@ -60,8 +69,13 @@
               Dung endpoint <code>/api/locations</code> de tim, loc va phan trang.
             </p>
           </div>
-          <div class="rounded-2xl bg-slate-50 px-4 py-3 text-xs text-slate-500">
-            {{ pagination().from || 0 }} - {{ pagination().to || 0 }} / {{ pagination().total }}
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="rounded-2xl bg-slate-50 px-4 py-3 text-xs text-slate-500">
+              {{ pagination().from || 0 }} - {{ pagination().to || 0 }} / {{ pagination().total }}
+            </div>
+            <span class="rounded-full bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-700">
+              CRUD UI dang cho API
+            </span>
           </div>
         </div>
 
@@ -210,6 +224,9 @@
 
               <div class="flex items-center justify-start gap-2 lg:justify-end">
                 <span class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Xem chi tiet</span>
+                <span class="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-400">
+                  Sua
+                </span>
               </div>
             </button>
           </div>
@@ -381,6 +398,43 @@
                 <span class="text-slate-500">Google Maps</span>
                 <a *ngIf="selectedPlace()!.google_maps_link" [href]="selectedPlace()!.google_maps_link!" target="_blank" rel="noreferrer" class="text-right font-semibold text-orange-500">Mo maps</a>
                 <span *ngIf="!selectedPlace()!.google_maps_link" class="text-right font-semibold text-slate-800">Dang cap nhat</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="mt-6 rounded-[28px] border border-dashed border-slate-200 bg-slate-50/70 p-5">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 class="text-lg font-black text-slate-900">CRUD mock flow</h3>
+                <p class="mt-1 text-sm text-slate-500">
+                  Nút da duoc gan san tren frontend, hien dang disabled de cho API them / sua / xoa tu backend.
+                </p>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled
+                  title="Cho backend POST /locations"
+                  class="cursor-not-allowed rounded-2xl bg-orange-500/50 px-4 py-3 text-sm font-bold text-white opacity-70"
+                >
+                  Them
+                </button>
+                <button
+                  type="button"
+                  disabled
+                  title="Cho backend PATCH /locations/{id}"
+                  class="cursor-not-allowed rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-400"
+                >
+                  Sua
+                </button>
+                <button
+                  type="button"
+                  disabled
+                  title="Cho backend DELETE /locations/{id}"
+                  class="cursor-not-allowed rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-300"
+                >
+                  Xoa
+                </button>
               </div>
             </div>
           </section>

@@ -1,7 +1,10 @@
 import { Routes } from '@angular/router';
 import { AdminHome } from './admin/admin-home/admin-home';
+import { AdminInsights } from './admin/admin-insights/admin-insights';
+import { AdminItineraries } from './admin/admin-itineraries/admin-itineraries';
 import { AdminLocations } from './admin/admin-locations/admin-locations';
 import { AdminPartners } from './admin/admin-partners/admin-partners';
+import { AdminShell } from './admin/admin-shell/admin-shell';
 import { Discover } from './features/discover/discover';
 import { Detail } from './features/detail/detail';
 import { Favorite } from './features/favorite/favorite';
@@ -15,9 +18,17 @@ import { Reviews } from './features/reviews/reviews';
 import { UserShell } from './layout/user-shell';
 
 export const routes: Routes = [
-  { path: 'admin', component: AdminHome, title: 'Admin Dashboard' },
-  { path: 'admin/locations', component: AdminLocations, title: 'Admin Locations' },
-  { path: 'admin/partners', component: AdminPartners, title: 'Admin Partners' },
+  {
+    path: 'admin',
+    component: AdminShell,
+    children: [
+      { path: '', component: AdminHome, title: 'Admin Dashboard' },
+      { path: 'itineraries', component: AdminItineraries, title: 'Admin Itineraries' },
+      { path: 'insights', component: AdminInsights, title: 'Admin AI Insights' },
+      { path: 'locations', component: AdminLocations, title: 'Admin Locations' },
+      { path: 'partners', component: AdminPartners, title: 'Admin Partners' },
+    ],
+  },
   {
     path: '',
     component: UserShell,

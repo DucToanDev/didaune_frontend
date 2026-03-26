@@ -1,0 +1,501 @@
+<div class="admin-itineraries min-h-screen bg-slate-50 text-slate-900">
+  <div class="mx-auto max-w-[1600px] px-4 py-6 lg:px-8 lg:py-8">
+    <header class="mb-8 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+      <div>
+        
+        <h1 class="mt-2 text-3xl font-black text-slate-900">Quan ly lich trinh AI</h1>
+      </div>
+
+      <div class="flex flex-wrap gap-3">
+        <a
+          routerLink="/admin"
+          class="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+        >
+          <i class="fa-solid fa-arrow-left"></i>
+          Ve dashboard
+        </a>
+        <a
+          routerLink="/admin/insights"
+          class="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+        >
+          <i class="fa-solid fa-chart-line"></i>
+          Mo AI Insights
+        </a>
+      </div>
+    </header>
+
+    <section class="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <article *ngFor="let metric of metrics()" class="rounded-[28px] border border-slate-100 bg-white p-5 shadow-sm">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ metric.label }}</p>
+            <p class="mt-3 text-3xl font-black text-slate-900">{{ metric.value }}</p>
+            <p class="mt-1 text-xs text-slate-500">{{ metric.note }}</p>
+          </div>
+          <div class="flex h-11 w-11 items-center justify-center rounded-2xl" [class]="metric.tone">
+            <i [class]="'fa-solid ' + metric.icon"></i>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="mb-8 grid gap-6 xl:grid-cols-[0.78fr_1.22fr]">
+      <div class="rounded-[30px] border border-slate-100 bg-white p-5 shadow-sm">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <h2 class="text-xl font-black text-slate-900">Generate tu API</h2>
+          </div>
+          <i class="fa-solid fa-wand-magic-sparkles text-xl text-orange-500"></i>
+        </div>
+
+        <div class="mt-5 grid gap-3 sm:grid-cols-2">
+          <label class="block sm:col-span-2">
+            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Tieu de</span>
+            <input
+              type="text"
+              [ngModel]="generateForm().title"
+              (ngModelChange)="updateGenerateField('title', $event)"
+              placeholder="Dat ten neu muon, co the bo trong"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white"
+            />
+          </label>
+
+          <label class="block">
+            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Thanh pho</span>
+            <input
+              type="text"
+              [ngModel]="generateForm().destination_city"
+              (ngModelChange)="updateGenerateField('destination_city', $event)"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white"
+            />
+          </label>
+
+          <label class="block">
+            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">So ngay</span>
+            <input
+              type="number"
+              min="1"
+              max="14"
+              [ngModel]="generateForm().days"
+              (ngModelChange)="updateGenerateField('days', +$event)"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white"
+            />
+          </label>
+
+          <label class="block">
+            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Budget</span>
+            <input
+              type="number"
+              min="0"
+              [ngModel]="generateForm().budget"
+              (ngModelChange)="updateGenerateField('budget', +$event)"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white"
+            />
+          </label>
+
+          <label class="block">
+            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Travel mode</span>
+            <select
+              [ngModel]="generateForm().travel_mode"
+              (ngModelChange)="updateGenerateField('travel_mode', $event)"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white"
+            >
+              <option value="motorbike">motorbike</option>
+              <option value="car">car</option>
+              <option value="walking">walking</option>
+              <option value="mixed">mixed</option>
+            </select>
+          </label>
+
+          <label class="block">
+            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Start time</span>
+            <input
+              type="time"
+              [ngModel]="generateForm().start_time"
+              (ngModelChange)="updateGenerateField('start_time', $event)"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white"
+            />
+          </label>
+
+          <label class="block">
+            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">End time</span>
+            <input
+              type="time"
+              [ngModel]="generateForm().end_time"
+              (ngModelChange)="updateGenerateField('end_time', $event)"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white"
+            />
+          </label>
+
+          <label class="block">
+            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Trip style</span>
+            <select
+              [ngModel]="generateForm().trip_style"
+              (ngModelChange)="updateGenerateField('trip_style', $event)"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white"
+            >
+              <option value="relaxed">relaxed</option>
+              <option value="focused">focused</option>
+              <option value="romantic">romantic</option>
+              <option value="check-in">check-in</option>
+              <option value="adventure">adventure</option>
+              <option value="social">social</option>
+            </select>
+          </label>
+
+          <label class="block">
+            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Companion</span>
+            <select
+              [ngModel]="generateForm().companion_type"
+              (ngModelChange)="updateGenerateField('companion_type', $event)"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white"
+            >
+              <option value="solo">solo</option>
+              <option value="couple">couple</option>
+              <option value="friends">friends</option>
+              <option value="group">group</option>
+              <option value="family">family</option>
+            </select>
+          </label>
+
+          <label class="block">
+            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Energy</span>
+            <select
+              [ngModel]="generateForm().energy_level"
+              (ngModelChange)="updateGenerateField('energy_level', $event)"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white"
+            >
+              <option value="low">low</option>
+              <option value="balanced">balanced</option>
+              <option value="high">high</option>
+            </select>
+          </label>
+
+          <label class="block sm:col-span-2">
+            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Preferences</span>
+            <input
+              type="text"
+              [ngModel]="generateForm().preferences"
+              (ngModelChange)="updateGenerateField('preferences', $event)"
+              placeholder="Cach nhau bang dau phay"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white"
+            />
+          </label>
+        </div>
+
+        <button
+          type="button"
+          (click)="generateItinerary()"
+          [disabled]="generating()"
+          class="mt-5 w-full rounded-2xl bg-orange-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {{ generating() ? 'Dang generate...' : 'Generate itinerary moi' }}
+        </button>
+
+        <p *ngIf="successMessage()" class="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {{ successMessage() }}
+        </p>
+        <p *ngIf="errorMessage()" class="mt-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-600">
+          {{ errorMessage() }}
+        </p>
+      </div>
+
+      <div class="rounded-[30px] border border-slate-100 bg-white p-5 shadow-sm">
+        <div class="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 class="text-xl font-black text-slate-900">Danh sach lich trinh</h2>
+          </div>
+          <div class="rounded-2xl bg-slate-50 px-4 py-3 text-xs text-slate-500">
+            Tong backend: {{ total() }}
+          </div>
+        </div>
+
+        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <label class="block xl:col-span-2">
+            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Tim nhanh</span>
+            <input
+              type="text"
+              [ngModel]="search()"
+              (ngModelChange)="search.set($event)"
+              placeholder="Title, thanh pho, model..."
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white"
+            />
+          </label>
+
+          <label class="block">
+            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Thanh pho</span>
+            <select
+              [ngModel]="selectedCity()"
+              (ngModelChange)="selectedCity.set($event)"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white"
+            >
+              <option value="all">Tat ca</option>
+              <option *ngFor="let city of uniqueCities()" [value]="city">{{ city }}</option>
+            </select>
+          </label>
+
+          <label class="block">
+            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">AI model</span>
+            <select
+              [ngModel]="selectedModel()"
+              (ngModelChange)="selectedModel.set($event)"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white"
+            >
+              <option value="all">Tat ca</option>
+              <option *ngFor="let model of uniqueModels()" [value]="model">{{ model }}</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <label class="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            <span class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Per page</span>
+            <select [ngModel]="perPage()" (ngModelChange)="perPage.set(+$event); reloadList()" class="bg-transparent outline-none">
+              <option [ngValue]="10">10</option>
+              <option [ngValue]="20">20</option>
+              <option [ngValue]="50">50</option>
+            </select>
+          </label>
+
+          <button
+            type="button"
+            (click)="reloadList()"
+            class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            Tai lai
+          </button>
+        </div>
+
+        <div class="mt-6 overflow-hidden rounded-[28px] border border-slate-100">
+          <div class="hidden grid-cols-[1.4fr_0.7fr_0.7fr_0.7fr_0.55fr] gap-4 bg-slate-50 px-5 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400 lg:grid">
+            <span>Lich trinh</span>
+            <span>AI</span>
+            <span>Ngay</span>
+            <span>Budget</span>
+            <span class="text-right">Action</span>
+          </div>
+
+          <div *ngIf="loading()" class="px-5 py-10 text-center text-sm text-slate-500">Dang tai danh sach lich trinh...</div>
+          <div *ngIf="!loading() && !filteredItineraries().length" class="px-5 py-10 text-center text-sm text-slate-500">
+            Chua co lich trinh phu hop voi bo loc hien tai.
+          </div>
+
+          <div *ngIf="!loading()" class="divide-y divide-slate-100">
+            <button
+              *ngFor="let itinerary of filteredItineraries()"
+              type="button"
+              (click)="openDetail(itinerary)"
+              class="grid w-full gap-4 px-4 py-4 text-left transition hover:bg-orange-50/50 lg:grid-cols-[1.4fr_0.7fr_0.7fr_0.7fr_0.55fr] lg:px-5"
+            >
+              <div>
+                <p class="line-clamp-2 text-sm font-bold text-slate-900">{{ itinerary.title }}</p>
+                <p class="mt-1 text-xs text-slate-500">{{ itinerary.destination_city || 'Khong ro thanh pho' }}</p>
+                <p class="mt-1 text-[11px] text-slate-400">{{ itinerary.updated_at | date:'dd/MM/yyyy HH:mm' }}</p>
+              </div>
+
+              <div class="text-sm text-slate-600">
+                <p class="font-semibold text-orange-500">{{ itinerary.ai_model || 'Unknown' }}</p>
+                <p class="mt-1 text-xs text-slate-500">{{ itinerary.preferences_json.trip_style || 'N/A' }}</p>
+              </div>
+
+              <div class="text-sm text-slate-600">
+                <p class="font-semibold text-slate-900">{{ itinerary.days }} ngay</p>
+                <p class="mt-1 text-xs text-slate-500">{{ itinerary.items.length }} activities</p>
+              </div>
+
+              <div class="text-sm text-slate-600">
+                <p class="font-semibold text-slate-900">{{ itinerary.budget || 'N/A' }}</p>
+                <p class="mt-1 text-xs text-slate-500">{{ itinerary.travel_mode || 'N/A' }}</p>
+              </div>
+
+              <div class="flex items-center justify-start gap-2 lg:justify-end">
+                <span class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Mo</span>
+                <span class="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-500">Sua</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="lastPage() > 1" class="mt-5 flex flex-wrap items-center justify-between gap-4">
+          <p class="text-sm text-slate-500">Trang {{ currentPage() }} / {{ lastPage() }}</p>
+          <div class="flex items-center gap-2">
+            <button type="button" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() <= 1" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Truoc</button>
+            <button type="button" (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() >= lastPage()" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Sau</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div *ngIf="selectedItinerary()" class="fixed inset-0 z-[100] flex justify-end bg-slate-900/40 backdrop-blur-[1px]" (click)="closeDetail()">
+      <aside class="admin-itinerary-panel h-full w-full max-w-3xl overflow-y-auto bg-white shadow-2xl" (click)="$event.stopPropagation()">
+        <div class="sticky top-0 z-10 border-b border-slate-100 bg-white/95 px-5 py-4 backdrop-blur">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-orange-500">Itinerary detail</p>
+              <h2 class="mt-2 text-2xl font-black text-slate-900">{{ selectedItinerary()!.title }}</h2>
+              <p class="mt-1 text-sm text-slate-500">{{ selectedItinerary()!.destination_city || 'Khong ro diem den' }}</p>
+            </div>
+            <button type="button" (click)="closeDetail()" class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-5">
+          <p *ngIf="detailLoading()" class="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-500">Dang tai chi tiet day du...</p>
+          <p *ngIf="detailError()" class="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-600">{{ detailError() }}</p>
+
+          <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div class="rounded-[24px] bg-slate-50 p-4"><p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">AI model</p><p class="mt-2 text-base font-bold text-slate-900">{{ selectedItinerary()!.ai_model || 'Unknown' }}</p></div>
+            <div class="rounded-[24px] bg-slate-50 p-4"><p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Tong diem dung</p><p class="mt-2 text-base font-bold text-slate-900">{{ selectedItinerary()!.items.length }}</p></div>
+            <div class="rounded-[24px] bg-slate-50 p-4"><p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Travel</p><p class="mt-2 text-base font-bold text-slate-900">{{ selectedItinerary()!.overview?.total_travel_distance_km || 'N/A' }} km</p></div>
+            <div class="rounded-[24px] bg-slate-50 p-4"><p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Budget</p><p class="mt-2 text-base font-bold text-slate-900">{{ selectedItinerary()!.budget || 'N/A' }}</p></div>
+          </div>
+
+          <section class="mt-6 rounded-[28px] border border-slate-100 p-5">
+            <div class="flex items-center justify-between gap-3">
+              <h3 class="text-lg font-black text-slate-900">Cap nhat metadata</h3>
+              <button
+                type="button"
+                (click)="saveMetadata()"
+                [disabled]="saving()"
+                class="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {{ saving() ? 'Dang luu...' : 'Luu thay doi' }}
+              </button>
+            </div>
+
+            <div class="mt-5 grid gap-3 sm:grid-cols-2">
+              <label class="block sm:col-span-2">
+                <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Tieu de</span>
+                <input type="text" [ngModel]="editForm().title" (ngModelChange)="updateEditField('title', $event)" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white" />
+              </label>
+              <label class="block">
+                <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Thanh pho</span>
+                <input type="text" [ngModel]="editForm().destination_city" (ngModelChange)="updateEditField('destination_city', $event)" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white" />
+              </label>
+              <label class="block">
+                <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Days</span>
+                <input type="number" min="1" max="14" [ngModel]="editForm().days" (ngModelChange)="updateEditField('days', +$event)" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white" />
+              </label>
+              <label class="block">
+                <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Budget</span>
+                <input type="number" min="0" [ngModel]="editForm().budget" (ngModelChange)="updateEditField('budget', +$event)" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white" />
+              </label>
+              <label class="block">
+                <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Travel mode</span>
+                <input type="text" [ngModel]="editForm().travel_mode" (ngModelChange)="updateEditField('travel_mode', $event)" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white" />
+              </label>
+              <label class="block">
+                <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Start time</span>
+                <input type="time" [ngModel]="editForm().start_time" (ngModelChange)="updateEditField('start_time', $event)" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white" />
+              </label>
+              <label class="block">
+                <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">End time</span>
+                <input type="time" [ngModel]="editForm().end_time" (ngModelChange)="updateEditField('end_time', $event)" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white" />
+              </label>
+              <label class="block">
+                <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Trip style</span>
+                <input type="text" [ngModel]="editForm().trip_style" (ngModelChange)="updateEditField('trip_style', $event)" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white" />
+              </label>
+              <label class="block">
+                <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Companion</span>
+                <input type="text" [ngModel]="editForm().companion_type" (ngModelChange)="updateEditField('companion_type', $event)" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white" />
+              </label>
+              <label class="block">
+                <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Energy</span>
+                <input type="text" [ngModel]="editForm().energy_level" (ngModelChange)="updateEditField('energy_level', $event)" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white" />
+              </label>
+              <label class="block sm:col-span-2">
+                <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Preferences</span>
+                <input type="text" [ngModel]="editForm().preferences" (ngModelChange)="updateEditField('preferences', $event)" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-orange-300 focus:bg-white" />
+              </label>
+            </div>
+          </section>
+
+          <section class="mt-6 rounded-[28px] border border-slate-100 p-5">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 class="text-lg font-black text-slate-900">Tong quan AI</h3>
+                <p class="mt-1 text-sm text-slate-500">Prompt, response va overview duoc doc truc tiep tu API.</p>
+              </div>
+              <button
+                type="button"
+                (click)="deleteSelected()"
+                [disabled]="deleting()"
+                class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-600 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {{ deleting() ? 'Dang xoa...' : 'Xoa lich trinh' }}
+              </button>
+            </div>
+
+            <div class="mt-5 grid gap-4 lg:grid-cols-2">
+              <div class="rounded-[24px] bg-slate-50 p-4">
+                <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Overview</p>
+                <div class="mt-3 space-y-2 text-sm">
+                  <div class="flex justify-between gap-4"><span class="text-slate-500">Trip style</span><span class="font-semibold text-slate-800">{{ selectedItinerary()!.overview?.trip_style || 'N/A' }}</span></div>
+                  <div class="flex justify-between gap-4"><span class="text-slate-500">Pace</span><span class="font-semibold text-slate-800">{{ selectedItinerary()!.overview?.pace || 'N/A' }}</span></div>
+                  <div class="flex justify-between gap-4"><span class="text-slate-500">Companion</span><span class="font-semibold text-slate-800">{{ selectedItinerary()!.overview?.companion_type || 'N/A' }}</span></div>
+                  <div class="flex justify-between gap-4"><span class="text-slate-500">Travel minutes</span><span class="font-semibold text-slate-800">{{ selectedItinerary()!.overview?.total_travel_minutes || 0 }}</span></div>
+                </div>
+              </div>
+
+              <div class="rounded-[24px] bg-slate-50 p-4">
+                <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Map markers</p>
+                <div class="mt-3 space-y-3">
+                  <div *ngFor="let marker of selectedItinerary()!.map_markers.slice(0, 4)" class="rounded-2xl bg-white px-3 py-3 text-sm">
+                    <p class="font-semibold text-slate-900">{{ marker.name }}</p>
+                    <p class="mt-1 text-xs text-slate-500">{{ marker.full_address || marker.main_category || 'Khong co dia chi' }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-5 grid gap-4 lg:grid-cols-2">
+              <div class="rounded-[24px] bg-slate-950 p-4 text-slate-100">
+                <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-orange-300">Raw prompt</p>
+                <pre class="mt-3 max-h-64 overflow-auto whitespace-pre-wrap text-xs leading-6 text-slate-300">{{ selectedItinerary()!.raw_prompt || 'Khong co raw_prompt' }}</pre>
+              </div>
+              <div class="rounded-[24px] bg-slate-900 p-4 text-slate-100">
+                <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-sky-300">Raw AI response</p>
+                <pre class="mt-3 max-h-64 overflow-auto whitespace-pre-wrap text-xs leading-6 text-slate-300">{{ selectedItinerary()!.raw_ai_response || 'Khong co raw_ai_response' }}</pre>
+              </div>
+            </div>
+          </section>
+
+          <section class="mt-6 rounded-[28px] border border-slate-100 p-5">
+            <h3 class="text-lg font-black text-slate-900">Lich trinh theo ngay</h3>
+            <div class="mt-4 space-y-4">
+              <article *ngFor="let day of selectedItinerary()!.day_summaries" class="rounded-[24px] bg-slate-50 p-4">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-black text-slate-900">Ngay {{ day.day_number }} • {{ day.theme || 'Khong co theme' }}</p>
+                    <p class="mt-1 text-sm text-slate-500">{{ day.summary || 'Khong co tom tat' }}</p>
+                  </div>
+                  <span class="rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-slate-600">
+                    {{ day.items_count }} diem dung
+                  </span>
+                </div>
+
+                <div class="mt-4 space-y-3">
+                  <div *ngFor="let item of day.items" class="rounded-[20px] bg-white p-4">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p class="text-sm font-semibold text-slate-900">{{ item.activity_title }}</p>
+                        <p class="mt-1 text-xs text-slate-500">{{ item.location?.name || 'Khong gan location cu the' }}</p>
+                      </div>
+                      <span class="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-600">
+                        {{ item.start_time || '--:--' }} - {{ item.end_time || '--:--' }}
+                      </span>
+                    </div>
+                    <p class="mt-2 text-sm leading-6 text-slate-600">{{ item.note || 'Khong co ghi chu them.' }}</p>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>

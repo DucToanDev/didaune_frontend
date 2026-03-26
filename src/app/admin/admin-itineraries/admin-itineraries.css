@@ -1,0 +1,14 @@
+.admin-itineraries {
+  font-family: 'Inter', sans-serif;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+pre {
+  font-family: 'IBM Plex Mono', 'Consolas', monospace;
+}

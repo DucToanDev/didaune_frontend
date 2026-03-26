@@ -2,14 +2,8 @@
   <div class="mx-auto max-w-[1600px] px-4 py-6 lg:px-8 lg:py-8">
     <header class="mb-8 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
       <div>
-        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-orange-500">
-          Admin • Locations
-        </p>
+        
         <h1 class="mt-2 text-3xl font-black text-slate-900">Quan ly dia diem</h1>
-        <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
-          Trang nay dang goi truc tiep cac API trong docs: list locations, detail theo id,
-          trending, nearby va import JSON. Toan bo chi sua o frontend admin.
-        </p>
       </div>
 
       <div class="flex flex-wrap gap-3">
@@ -65,9 +59,7 @@
         <div class="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 class="text-xl font-black text-slate-900">Bo loc va danh sach</h2>
-            <p class="mt-1 text-sm text-slate-500">
-              Dung endpoint <code>/api/locations</code> de tim, loc va phan trang.
-            </p>
+           
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <div class="rounded-2xl bg-slate-50 px-4 py-3 text-xs text-slate-500">
@@ -223,9 +215,14 @@
               </div>
 
               <div class="flex items-center justify-start gap-2 lg:justify-end">
-                <span class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Xem chi tiet</span>
-                <span class="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-400">
-                  Sua
+                <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-sm text-white" title="Xem chi tiet">
+                  <i class="fa-solid fa-eye"></i>
+                </span>
+                <span class="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-sm text-slate-400" title="Sua">
+                  <i class="fa-solid fa-pen"></i>
+                </span>
+                <span class="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-sm text-slate-400" title="Xoa">
+                  <i class="fa-solid fa-trash"></i>
                 </span>
               </div>
             </button>
@@ -256,7 +253,6 @@
           <div class="flex items-center justify-between gap-3">
             <div>
               <h2 class="text-lg font-black text-slate-900">Import JSON</h2>
-              <p class="mt-1 text-sm text-slate-500">Dung endpoint <code>/api/locations/import</code>.</p>
             </div>
             <i class="fa-solid fa-file-import text-xl text-orange-500"></i>
           </div>
@@ -283,9 +279,7 @@
         <section class="rounded-[30px] border border-slate-100 bg-white p-5 shadow-sm">
           <div class="flex items-center justify-between gap-3">
             <div>
-              <h2 class="text-lg font-black text-slate-900">Trending tu API</h2>
-              <p class="mt-1 text-sm text-slate-500">Dung endpoint <code>/api/locations/trending</code>.</p>
-            </div>
+              <h2 class="text-lg font-black text-slate-900">Trending tu API</h2>            </div>
             <i class="fa-solid fa-fire-flame-curved text-xl text-orange-500"></i>
           </div>
 
@@ -311,9 +305,7 @@
         <section class="rounded-[30px] border border-slate-100 bg-white p-5 shadow-sm">
           <div class="flex items-center justify-between gap-3">
             <div>
-              <h2 class="text-lg font-black text-slate-900">Nearby tu API</h2>
-              <p class="mt-1 text-sm text-slate-500">Dung endpoint <code>/api/locations/nearby</code>.</p>
-            </div>
+              <h2 class="text-lg font-black text-slate-900">Nearby tu API</h2>            </div>
             <i class="fa-solid fa-location-dot text-xl text-sky-500"></i>
           </div>
 

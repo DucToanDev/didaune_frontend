@@ -42,6 +42,16 @@ interface BackendFavorite {
   location?: BackendLocation | null;
 }
 
+interface BackendImportResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    imported?: number;
+    created?: number;
+    skipped?: number;
+  } | null;
+}
+
 interface BackendHomeHero {
   province_code: number | null;
   ward_code: number | null;
@@ -122,6 +132,7 @@ export class LocationApiService {
 
   fetchLocationsPaginated(options: {
     cityId: string;
+    search?: string;
     wardCode?: string;
     areaId?: string;
     categoryId?: string;
@@ -131,6 +142,7 @@ export class LocationApiService {
   }): Observable<PaginatedPlacesResult> {
     const {
       cityId,
+      search = '',
       wardCode = '',
       areaId = 'all',
       categoryId = 'all',
@@ -147,6 +159,10 @@ export class LocationApiService {
 
     if (provinceCode) {
       params = params.set('province_code', String(provinceCode));
+    }
+
+    if (search.trim()) {
+      params = params.set('search', search.trim());
     }
 
     if (wardCode) {
@@ -281,6 +297,60 @@ export class LocationApiService {
           return this.mapper.normalizeBackendLocation(location, 0, 1);
         }),
       );
+  }
+
+  getPlaceById(id: string, fallbackCityId = 'hcm'): Observable<Place> {
+    return this.http
+      .get<BackendApiEnvelope<BackendLocation>>(`${this.apiBaseUrl}/locations/${id}`)
+      .pipe(
+        map((response) =>
+          this.mapper.normalizeBackendLocation(response.data, 0, 1, fallbackCityId)
+        )
+      );
+  }
+
+  fetchTrendingLocations(cityId = 'hcm'): Observable<Place[]> {
+    return this.http
+      .get<BackendApiEnvelope<BackendLocation[]>>(`${this.apiBaseUrl}/locations/trending`)
+      .pipe(
+        map((response) =>
+          response.data.map((location, index, source) =>
+            this.mapper.normalizeBackendLocation(location, index, source.length, cityId)
+          )
+        )
+      );
+  }
+
+  fetchNearbyLocations(
+    lat: number,
+    lng: number,
+    radius = 5,
+    cityId = 'hcm'
+  ): Observable<Place[]> {
+    const params = new HttpParams()
+      .set('lat', String(lat))
+      .set('lng', String(lng))
+      .set('radius', String(radius));
+
+    return this.http
+      .get<BackendApiEnvelope<BackendLocation[]>>(`${this.apiBaseUrl}/locations/nearby`, {
+        params,
+      })
+      .pipe(
+        map((response) =>
+          response.data.map((location, index, source) =>
+            this.mapper.normalizeBackendLocation(location, index, source.length, cityId)
+          )
+        )
+      );
+  }
+
+  importLocations(file: File, truncate = false): Observable<BackendImportResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('truncate', truncate ? 'true' : 'false');
+
+    return this.http.post<BackendImportResponse>(`${this.apiBaseUrl}/locations/import`, formData);
   }
 
   fetchFavoriteSlugs(userId: number): Observable<string[]> {

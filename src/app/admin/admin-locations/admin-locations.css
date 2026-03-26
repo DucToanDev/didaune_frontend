@@ -1,0 +1,26 @@
+.admin-locations {
+  font-family: 'Inter', sans-serif;
+}
+
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+}
+
+.admin-detail-panel {
+  animation: admin-detail-slide 180ms ease-out;
+}
+
+@keyframes admin-detail-slide {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

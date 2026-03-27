@@ -1,31 +1,56 @@
-<div class="admin-shell min-h-screen bg-slate-50 text-slate-900">
-  <div class="mx-auto flex min-h-screen max-w-[1920px]">
-    <aside class="admin-sidebar sticky top-0 hidden h-screen w-[260px] shrink-0 flex-col border-r border-slate-300 text-slate-700 xl:flex">
-      <div class="border-b border-slate-300 px-6 py-6">
-        <div class="flex items-center gap-3">
-          <a href="/" class="flex min-w-0 items-center gap- p-0 text-center">
-            <img src="logo.svg" alt="logo" class="h-12 w-auto max-w-[210px] md:h-11 md:max-w-[220px] lg:h-14 lg:max-w-[260px]" />
+<div class="admin-shell">
+  <!-- ── Mobile top bar ── -->
+  <header class="admin-topbar xl:hidden">
+    <button type="button" (click)="toggleMobileSidebar()" class="topbar-btn">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <a href="/" class="topbar-brand"><img src="logo.svg" alt="didaune" /></a>
+    <div class="topbar-spacer"></div>
+  </header>
+
+  <!-- ── Mobile overlay ── -->
+  <div *ngIf="mobileSidebarOpen()" class="sidebar-overlay xl:hidden" (click)="toggleMobileSidebar()">
+    <nav class="sidebar sidebar--mobile" (click)="$event.stopPropagation()">
+      <div class="sidebar-head">
+        <img src="logo.svg" alt="didaune" class="sidebar-logo sidebar-logo--light" />
+        <button type="button" (click)="toggleMobileSidebar()" class="topbar-btn"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <ul class="sidebar-nav">
+        <li *ngFor="let m of menus">
+          <a [routerLink]="m.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: m.route === '/admin' }" (click)="toggleMobileSidebar()">
+            <i [class]="'fa-solid ' + m.icon"></i><span>{{ m.label }}</span>
           </a>
-        </div>
+        </li>
+      </ul>
+    </nav>
+  </div>
+
+  <div class="admin-layout">
+    <!-- ── Desktop sidebar ── -->
+    <nav class="sidebar hidden xl:flex" [class.sidebar--collapsed]="!sidebarOpen()">
+      <div class="sidebar-head">
+        <img *ngIf="sidebarOpen()" src="logo.svg" alt="didaune" class="sidebar-logo" />
+        <button type="button" (click)="toggleSidebar()" class="sidebar-toggle">
+          <i [class]="'fa-solid ' + (sidebarOpen() ? 'fa-chevron-left' : 'fa-chevron-right')"></i>
+        </button>
       </div>
 
-      <nav class="flex-1 space-y-2 px-4 py-6">
-        <a
-          *ngFor="let menu of menus"
-          [routerLink]="menu.route"
-          routerLinkActive="admin-nav-active"
-          [routerLinkActiveOptions]="{ exact: menu.route === '/admin' }"
-          class="admin-nav-link flex w-full items-center gap-4 rounded-2xl px-4 py-3 text-left transition"
-        >
-          <i [class]="'fa-solid ' + menu.icon + ' w-5 text-center'"></i>
-          <span class="text-sm font-semibold">{{ menu.label }}</span>
-        </a>
-      </nav>
+      <ul class="sidebar-nav">
+        <li *ngFor="let m of menus">
+          <a [routerLink]="m.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: m.route === '/admin' }" [title]="!sidebarOpen() ? m.label : ''">
+            <i [class]="'fa-solid ' + m.icon"></i>
+            <span *ngIf="sidebarOpen()">{{ m.label }}</span>
+          </a>
+        </li>
+      </ul>
 
-      
-    </aside>
+      <div *ngIf="sidebarOpen()" class="sidebar-footer">
+        <span class="sidebar-version">didaune admin <em>v2</em></span>
+      </div>
+    </nav>
 
-    <main class="min-w-0 flex-1 p-4 lg:p-6 xl:p-8">
+    <!-- ── Page content ── -->
+    <main class="admin-main">
       <router-outlet></router-outlet>
     </main>
   </div>

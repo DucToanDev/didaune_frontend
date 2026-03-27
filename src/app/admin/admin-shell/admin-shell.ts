@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { RouterModule } from '@angular/router';
 
 @Component({
@@ -10,11 +10,21 @@ import { RouterModule } from '@angular/router';
   styleUrl: './admin-shell.css',
 })
 export class AdminShell {
+  sidebarOpen = signal(true);
+  mobileSidebarOpen = signal(false);
+
   readonly menus = [
-    { label: 'Tong quan', icon: 'fa-th-large', route: '/admin' },
-    { label: 'Dia diem', icon: 'fa-map-marker-alt', route: '/admin/locations' },
-    { label: 'Doi tac', icon: 'fa-store', route: '/admin/partners' },
-    { label: 'Lich trinh', icon: 'fa-route', route: '/admin/itineraries' },
-    { label: 'AI Insights', icon: 'fa-magic', route: '/admin/insights' },
+    { label: 'Tổng quan', icon: 'fa-grid-2', route: '/admin' },
+    { label: 'Địa điểm', icon: 'fa-location-dot', route: '/admin/locations' },
+    { label: 'Lịch trình', icon: 'fa-route', route: '/admin/itineraries' },
+    { label: 'Người dùng', icon: 'fa-users', route: '/admin/users' },
   ];
+
+  toggleSidebar() {
+    this.sidebarOpen.update((v) => !v);
+  }
+
+  toggleMobileSidebar() {
+    this.mobileSidebarOpen.update((v) => !v);
+  }
 }

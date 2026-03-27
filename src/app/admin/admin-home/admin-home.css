@@ -1,17 +1,31 @@
-.admin-dashboard {
+.admin-page {
   font-family: 'Inter', sans-serif;
 }
 
-.line-clamp-1 {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
-  overflow: hidden;
+.card {
+  background: #fff;
+  border: 1px solid #f1f5f9;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
-code {
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.06);
-  padding: 0.15rem 0.5rem;
-  font-size: 0.8em;
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

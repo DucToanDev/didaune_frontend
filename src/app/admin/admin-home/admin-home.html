@@ -1,321 +1,135 @@
-<div class="admin-dashboard text-slate-900">
-  <header class="mb-8 rounded-[32px] border border-slate-100 bg-white p-5 shadow-sm">
-        <div class="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-          <div>
-            <h1 class="mt-2 text-3xl font-black text-slate-900">Trang chu dieu hanh</h1>
-            
-          </div>
+<div class="admin-page">
+  <app-admin-header title="Tổng quan hệ thống" breadcrumb="Tổng quan">
+    <button
+      type="button"
+      (click)="loadDashboard()"
+      class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-[.97]"
+    >
+      <i [class]="loading() ? 'fa-solid fa-spinner animate-spin text-xs' : 'fa-solid fa-arrows-rotate text-xs'"></i>
+      Làm mới
+    </button>
+  </app-admin-header>
 
-          <div class="flex flex-wrap gap-3">
-            <label class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
-              <span class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Thanh pho</span>
-              <select
-                [ngModel]="selectedCityId()"
-                (ngModelChange)="onCityChange($event)"
-                class="bg-transparent font-semibold text-slate-700 outline-none"
-              >
-                <option *ngFor="let city of cities()" [ngValue]="city.id">{{ city.name }}</option>
-              </select>
-            </label>
-
-            <button
-              type="button"
-              (click)="loadDashboard()"
-              class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Tai lai API
-            </button>
-
-            <button
-              type="button"
-              (click)="requestNearby()"
-              class="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-            >
-              <i [class]="nearbyLoading() ? 'fa-solid fa-spinner animate-spin mr-2' : 'fa-solid fa-location-crosshairs mr-2'"></i>
-              Quet nearby
-            </button>
-          </div>
-        </div>
-  </header>
-
-  <p *ngIf="errorMessage()" class="mb-6 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-600">
-    {{ errorMessage() }}
-  </p>
-
-  <section class="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-4">
-        <article *ngFor="let metric of metrics()" class="rounded-[28px] border border-slate-100 bg-white p-5 shadow-sm">
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ metric.label }}</p>
-              <p class="mt-3 text-3xl font-black text-slate-900">{{ metric.value }}</p>
-              <p class="mt-1 text-xs text-slate-500">{{ metric.note }}</p>
-            </div>
-            <div class="flex h-11 w-11 items-center justify-center rounded-2xl" [class]="metric.tone">
-              <i [class]="'fa-solid ' + metric.icon"></i>
-            </div>
-          </div>
-        </article>
+  <!-- Metrics -->
+  <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <app-metric-card
+      *ngFor="let m of metrics()"
+      [label]="m.label"
+      [value]="m.value"
+      [note]="m.note"
+      [icon]="m.icon"
+      [variant]="m.variant"
+    />
   </section>
 
-  <section class="mb-8 grid gap-6 2xl:grid-cols-[1.15fr_0.85fr]">
-        <div class="rounded-[30px] border border-slate-100 bg-white p-5 shadow-sm">
-          <div class="mb-5 flex items-center justify-between gap-3">
-            <div>
-              <h2 class="text-xl font-black text-slate-900">Main aside shortcuts</h2>
-            </div>
-            <i class="fa-solid fa-grid-2 text-xl text-orange-500"></i>
+  <!-- Quick Links + Recent Itineraries -->
+  <section class="mt-6 grid gap-5 xl:grid-cols-[1fr_1fr]">
+    <!-- Quick Links -->
+    <div class="card">
+      <div class="card-head">
+        <h2 class="card-title">Truy cập nhanh</h2>
+      </div>
+      <div class="grid gap-3">
+        <a
+          *ngFor="let link of quickLinks"
+          [routerLink]="link.route"
+          class="group flex items-center gap-3.5 rounded-2xl border border-slate-100 bg-slate-50/60 p-4 transition hover:border-orange-200 hover:bg-orange-50/40"
+        >
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-orange-500 shadow-sm transition group-hover:scale-110">
+            <i [class]="'fa-solid ' + link.icon + ' text-sm'"></i>
           </div>
+          <div class="min-w-0">
+            <p class="text-sm font-bold text-slate-800">{{ link.label }}</p>
+            <p class="mt-0.5 text-xs text-slate-500">{{ link.note }}</p>
+          </div>
+          <i class="fa-solid fa-chevron-right ml-auto text-xs text-slate-300 transition group-hover:text-orange-400"></i>
+        </a>
+      </div>
+    </div>
 
-          <div class="grid gap-4 md:grid-cols-2">
-            <button
-              *ngFor="let item of apiCards()"
-              type="button"
-              [routerLink]="item.route"
-              class="rounded-[28px] border border-slate-100 bg-slate-50 p-5 text-left transition hover:border-orange-200 hover:bg-orange-50/40"
-            >
-              <div class="flex items-center gap-3">
-                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-orange-500">
-                  <i [class]="'fa-solid ' + item.icon"></i>
-                </div>
-                <div>
-                  <p class="text-base font-black text-slate-900">{{ item.label }}</p>
-                  <p class="mt-1 text-xs leading-5 text-slate-500">{{ item.note }}</p>
-                </div>
-              </div>
-            </button>
+    <!-- Recent Itineraries -->
+    <div class="card">
+      <div class="card-head">
+        <h2 class="card-title">Lịch trình gần đây</h2>
+        <a routerLink="/admin/itineraries" class="text-xs font-semibold text-orange-500 hover:underline">Xem tất cả →</a>
+      </div>
+      <div *ngIf="!recentItineraries().length" class="flex flex-col items-center py-10 text-sm text-slate-400">
+        <i class="fa-solid fa-route mb-2 text-2xl"></i>
+        Chưa có lịch trình
+      </div>
+      <div class="space-y-2">
+        <div
+          *ngFor="let it of recentItineraries()"
+          class="flex items-center gap-3 rounded-xl bg-slate-50/60 p-3 transition hover:bg-slate-100/80"
+        >
+          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600">
+            <i class="fa-solid fa-route text-xs"></i>
           </div>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-semibold text-slate-800">{{ it.title }}</p>
+            <p class="text-xs text-slate-500">{{ it.days }} ngày • {{ it.items.length }} điểm • {{ it.ai_model || 'N/A' }}</p>
+          </div>
+          <span class="shrink-0 text-[11px] text-slate-400">{{ it.created_at | date:'dd/MM' }}</span>
         </div>
-
-        <div class="rounded-[30px] bg-slate-950 p-5 text-white shadow-xl shadow-slate-950/10">
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <h2 class="text-xl font-black text-white">AI pulse</h2>
-            </div>
-            <i class="fa-solid fa-sparkles text-xl text-orange-400"></i>
-          </div>
-
-          <div class="mt-5 grid gap-4 md:grid-cols-2">
-            <div class="rounded-[24px] border border-slate-800 bg-slate-900 p-4">
-              <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">AI models</p>
-              <div class="mt-3 flex flex-wrap gap-2">
-                <span *ngFor="let model of uniqueModels()" class="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-200">
-                  {{ model }}
-                </span>
-              </div>
-            </div>
-
-            <div class="rounded-[24px] border border-slate-800 bg-slate-900 p-4">
-              <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Recent output</p>
-              <p class="mt-3 text-3xl font-black text-white">{{ latestItineraries().length }}</p>
-              <p class="mt-1 text-sm text-slate-400">Ban ghi moi nhat dang hien tren dashboard</p>
-            </div>
-
-            <div class="rounded-[24px] border border-slate-800 bg-slate-900 p-4 md:col-span-2">
-              <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Generation rhythm</p>
-              <div class="mt-5 flex h-40 items-end gap-3">
-                <div *ngFor="let bar of weekdayBars()" class="flex flex-1 flex-col items-center gap-2">
-                  <div class="flex w-full items-end justify-center rounded-t-2xl bg-slate-800" [style.height]="bar.height">
-                    <span class="pb-2 text-xs font-semibold text-slate-300">{{ bar.count }}</span>
-                  </div>
-                  <span class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{{ bar.label }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      </div>
+    </div>
   </section>
 
-  <section class="mb-8 grid gap-6 2xl:grid-cols-[1.05fr_0.95fr]">
-        <div class="rounded-[30px] border border-slate-100 bg-white p-5 shadow-sm">
-          <div class="mb-5 flex items-center justify-between gap-3">
-            <div>
-              <h2 class="text-xl font-black text-slate-900">Top danh muc va khu vuc</h2>
-            </div>
-            <i class="fa-solid fa-layer-group text-xl text-orange-500"></i>
+  <!-- Trending + Recent Users -->
+  <section class="mt-6 grid gap-5 xl:grid-cols-[1fr_1fr]">
+    <!-- Trending Places -->
+    <div class="card">
+      <div class="card-head">
+        <h2 class="card-title">Trending</h2>
+        <a routerLink="/admin/locations" class="text-xs font-semibold text-orange-500 hover:underline">Xem tất cả →</a>
+      </div>
+      <div class="space-y-2">
+        <div
+          *ngFor="let place of trendingPlaces(); let i = index"
+          class="flex items-center gap-3 rounded-xl bg-slate-50/60 p-3 transition hover:bg-slate-100/80"
+        >
+          <img
+            [src]="place.image"
+            [alt]="place.name"
+            class="h-10 w-10 rounded-lg object-cover"
+          />
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-semibold text-slate-800">{{ place.name }}</p>
+            <p class="text-xs text-slate-500">{{ place.district_name }} • {{ place.rating }}★ • {{ place.review_count }} đánh giá</p>
           </div>
-
-          <div class="grid gap-4 md:grid-cols-2">
-            <div class="rounded-[24px] bg-slate-50 p-4">
-              <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Top category</p>
-              <div class="mt-4 space-y-3">
-                <div *ngFor="let item of topCategories()" class="flex items-center justify-between gap-3 text-sm">
-                  <span class="font-semibold text-slate-800">{{ item.label }}</span>
-                  <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">{{ item.count }}</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="rounded-[24px] bg-slate-50 p-4">
-              <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Top district</p>
-              <div class="mt-4 space-y-3">
-                <div *ngFor="let item of topDistricts()" class="flex items-center justify-between gap-3 text-sm">
-                  <span class="font-semibold text-slate-800">{{ item.label }}</span>
-                  <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">{{ item.count }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-100 text-[10px] font-bold text-orange-600">{{ i + 1 }}</span>
         </div>
+      </div>
+    </div>
 
-        <div class="rounded-[30px] border border-slate-100 bg-white p-5 shadow-sm">
-          <div class="mb-5 flex items-center justify-between gap-3">
-            <div>
-              <h2 class="text-xl font-black text-slate-900">Nearby control</h2>
-            </div>
-            <i class="fa-solid fa-location-dot text-xl text-sky-500"></i>
+    <!-- Recent Users -->
+    <div class="card">
+      <div class="card-head">
+        <h2 class="card-title">Người dùng mới</h2>
+        <a routerLink="/admin/users" class="text-xs font-semibold text-orange-500 hover:underline">Xem tất cả →</a>
+      </div>
+      <div *ngIf="!recentUsers().length" class="flex flex-col items-center py-10 text-sm text-slate-400">
+        <i class="fa-solid fa-users mb-2 text-2xl"></i>
+        Chưa có người dùng
+      </div>
+      <div class="space-y-2">
+        <div
+          *ngFor="let user of recentUsers()"
+          class="flex items-center gap-3 rounded-xl bg-slate-50/60 p-3 transition hover:bg-slate-100/80"
+        >
+          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-blue-500 text-xs font-bold text-white">
+            {{ user.name.charAt(0).toUpperCase() }}
           </div>
-
-          <p *ngIf="selectedCoordinates()" class="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            Vi tri hien tai: {{ selectedCoordinates()!.lat | number:'1.4-4' }} • {{ selectedCoordinates()!.lng | number:'1.4-4' }}
-          </p>
-
-          <p *ngIf="nearbyMessage()" class="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            {{ nearbyMessage() }}
-          </p>
-
-          <div *ngIf="nearbyPlaces().length" class="mt-5 space-y-3">
-            <article *ngFor="let place of nearbyPlaces()" class="rounded-[24px] bg-slate-50 p-4">
-              <div class="flex gap-3">
-                <img [src]="place.image" [alt]="place.name" class="h-14 w-14 rounded-2xl object-cover" />
-                <div class="min-w-0 flex-1">
-                  <p class="line-clamp-1 text-sm font-bold text-slate-900">{{ place.name }}</p>
-                  <p class="mt-1 line-clamp-1 text-xs text-slate-500">{{ place.address }}</p>
-                  <div class="mt-2 flex items-center gap-2 text-xs">
-                    <span class="font-semibold text-sky-600">{{ place.distance_km ?? 'N/A' }} km</span>
-                    <span class="text-slate-400">•</span>
-                    <span class="text-slate-500">{{ place.category_labels[0] || place.city_name }}</span>
-                  </div>
-                </div>
-              </div>
-            </article>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-semibold text-slate-800">{{ user.name }}</p>
+            <p class="text-xs text-slate-500">{{ user.email }}</p>
           </div>
+          <span
+            class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+            [class]="user.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'"
+          >{{ user.is_active ? 'Active' : 'Inactive' }}</span>
         </div>
-  </section>
-
-  <section class="mb-8 grid gap-6 2xl:grid-cols-[1.1fr_0.9fr]">
-        <div class="rounded-[30px] border border-slate-100 bg-white p-5 shadow-sm">
-          <div class="mb-5 flex items-center justify-between gap-3">
-            <div>
-              <h2 class="text-xl font-black text-slate-900">Trending dia diem</h2>
-            </div>
-            <i class="fa-solid fa-fire-flame-curved text-xl text-orange-500"></i>
-          </div>
-
-          <div class="grid gap-4 md:grid-cols-2">
-            <article *ngFor="let place of trendingPlaces()" class="rounded-[24px] bg-slate-50 p-4">
-              <div class="flex gap-3">
-                <img [src]="place.image" [alt]="place.name" class="h-16 w-16 rounded-2xl object-cover" />
-                <div class="min-w-0 flex-1">
-                  <p class="line-clamp-1 text-sm font-bold text-slate-900">{{ place.name }}</p>
-                  <p class="mt-1 text-xs text-slate-500">{{ place.district_name }} • {{ place.city_name }}</p>
-                  <div class="mt-3 flex flex-wrap gap-2">
-                    <span class="rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-orange-500">{{ place.rating }} ★</span>
-                    <span class="rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-slate-500">{{ place.review_count }} reviews</span>
-                  </div>
-                </div>
-              </div>
-            </article>
-          </div>
-        </div>
-
-        <div class="rounded-[30px] border border-slate-100 bg-white p-5 shadow-sm">
-          <div class="mb-5 flex items-center justify-between gap-3">
-            <div>
-              <h2 class="text-xl font-black text-slate-900">Doi tac can theo doi</h2>
-            </div>
-            <i class="fa-solid fa-store text-xl text-orange-500"></i>
-          </div>
-
-          <div class="space-y-3">
-            <article *ngFor="let place of partnerCandidates()" class="rounded-[24px] bg-slate-50 p-4">
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <p class="text-sm font-bold text-slate-900">{{ place.name }}</p>
-                  <p class="mt-1 text-xs text-slate-500">{{ place.owner_name || 'Chua co owner xac dinh' }}</p>
-                </div>
-                <span class="rounded-full px-3 py-1 text-[11px] font-semibold" [class]="place.can_claim ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-700'">
-                  {{ place.can_claim ? 'Can claim' : 'Active owner' }}
-                </span>
-              </div>
-              <div class="mt-3 flex flex-wrap gap-2 text-[11px]">
-                <span class="rounded-full bg-white px-3 py-1 font-semibold text-slate-500">{{ place.review_count }} reviews</span>
-                <span class="rounded-full bg-white px-3 py-1 font-semibold text-slate-500">{{ place.district_name }}</span>
-                <span class="rounded-full bg-white px-3 py-1 font-semibold text-slate-500">{{ place.category_labels[0] || 'Khac' }}</span>
-              </div>
-            </article>
-          </div>
-        </div>
-  </section>
-
-  <section class="grid gap-6 2xl:grid-cols-[0.95fr_1.05fr]">
-        <div class="rounded-[30px] border border-slate-100 bg-white p-5 shadow-sm">
-          <div class="mb-5 flex items-center justify-between gap-3">
-            <div>
-              <h2 class="text-xl font-black text-slate-900">Lich trinh moi nhat</h2>
-            </div>
-            <i class="fa-solid fa-clock-rotate-left text-xl text-violet-500"></i>
-          </div>
-
-          <div class="space-y-3">
-            <article *ngFor="let itinerary of latestItineraries()" class="rounded-[24px] bg-slate-50 p-4">
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <p class="text-sm font-bold text-slate-900">{{ itinerary.title }}</p>
-                  <p class="mt-1 text-xs text-slate-500">{{ itinerary.destination_city || 'Khong ro thanh pho' }}</p>
-                </div>
-                <span class="rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-slate-500">
-                  {{ itinerary.updated_at | date:'dd/MM HH:mm' }}
-                </span>
-              </div>
-              <div class="mt-3 grid grid-cols-3 gap-3 text-[11px]">
-                <div class="rounded-2xl bg-white px-3 py-3">
-                  <p class="font-bold uppercase tracking-[0.18em] text-slate-400">Model</p>
-                  <p class="mt-2 font-semibold text-slate-800">{{ itinerary.ai_model || 'Unknown' }}</p>
-                </div>
-                <div class="rounded-2xl bg-white px-3 py-3">
-                  <p class="font-bold uppercase tracking-[0.18em] text-slate-400">Days</p>
-                  <p class="mt-2 font-semibold text-slate-800">{{ itinerary.days }}</p>
-                </div>
-                <div class="rounded-2xl bg-white px-3 py-3">
-                  <p class="font-bold uppercase tracking-[0.18em] text-slate-400">Stops</p>
-                  <p class="mt-2 font-semibold text-slate-800">{{ itinerary.items.length }}</p>
-                </div>
-              </div>
-            </article>
-          </div>
-        </div>
-
-        <div class="rounded-[30px] bg-gradient-to-br from-orange-500 to-orange-600 p-5 text-white shadow-xl shadow-orange-100">
-          <div class="flex items-center gap-3">
-            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md">
-              <i class="fa-solid fa-compass text-white"></i>
-            </div>
-            <div>
-              <h2 class="text-xl font-black">Admin action center</h2>
-            </div>
-          </div>
-
-          <div class="mt-5 grid gap-4 md:grid-cols-2">
-            <a routerLink="/admin/locations" class="block rounded-[24px] border border-white/20 bg-white/10 p-4 text-left transition hover:bg-white/15">
-              <p class="text-sm font-black text-white">Mo quan ly dia diem</p>
-              <p class="mt-2 text-sm leading-6 text-orange-50">Kiem tra danh sach, detail, import JSON, trending va nearby.</p>
-            </a>
-
-            <a routerLink="/admin/partners" class="block rounded-[24px] border border-white/20 bg-white/10 p-4 text-left transition hover:bg-white/15">
-              <p class="text-sm font-black text-white">Xem doi tac</p>
-              <p class="mt-2 text-sm leading-6 text-orange-50">Theo doi owner, can_claim, owner_posts va diem co kha nang hop tac.</p>
-            </a>
-
-            <a routerLink="/admin/itineraries" class="block rounded-[24px] border border-white/20 bg-white/10 p-4 text-left transition hover:bg-white/15">
-              <p class="text-sm font-black text-white">Quan tri lich trinh</p>
-              <p class="mt-2 text-sm leading-6 text-orange-50">Generate, cap nhat metadata va xoa itinerary bang API that.</p>
-            </a>
-
-            <a routerLink="/admin/insights" class="block rounded-[24px] border border-white/20 bg-white/10 p-4 text-left transition hover:bg-white/15">
-              <p class="text-sm font-black text-white">Doc AI insights</p>
-              <p class="mt-2 text-sm leading-6 text-orange-50">Xem trend model, prompt monitor, city mix va generation rhythm.</p>
-            </a>
-          </div>
-        </div>
+      </div>
+    </div>
   </section>
 </div>

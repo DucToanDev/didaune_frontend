@@ -1,0 +1,141 @@
+<div class="admin-page">
+  <app-admin-header title="Quản lý người dùng" breadcrumb="Người dùng">
+    <button (click)="openCreate()" class="btn-primary">
+      <i class="fa-solid fa-user-plus"></i> Thêm mới
+    </button>
+    <button (click)="loadData(1)" class="btn-outline">
+      <i [class]="loading() ? 'fa-solid fa-spinner animate-spin' : 'fa-solid fa-arrows-rotate'"></i> Làm mới
+    </button>
+  </app-admin-header>
+
+  <div class="card">
+    <div class="card-head">
+      <h2 class="card-title">Danh sách ({{ pagination().total }})</h2>
+    </div>
+
+    <!-- Filters -->
+    <div class="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="filter-group">
+        <label class="filter-label">Tìm kiếm</label>
+        <input type="text" [ngModel]="search()" (ngModelChange)="search.set($event)" (keyup.enter)="onSearch()" placeholder="Tên, email, SĐT..." class="filter-input" />
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Vai trò</label>
+        <select [ngModel]="roleFilter()" (ngModelChange)="roleFilter.set($event); loadData(1)" class="filter-input">
+          <option value="">Tất cả</option>
+          <option value="admin">Admin</option>
+          <option value="user">User</option>
+          <option value="owner">Owner</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Trạng thái</label>
+        <select [ngModel]="activeFilter()" (ngModelChange)="activeFilter.set($event === '' ? null : $event === 'true'); loadData(1)" class="filter-input">
+          <option value="">Tất cả</option>
+          <option value="true">Active</option>
+          <option value="false">Inactive</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Người dùng</th>
+            <th>Email</th>
+            <th>Vai trò</th>
+            <th>Trạng thái</th>
+            <th>Điểm</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of users()">
+            <td>
+              <div class="flex items-center gap-3">
+                <div class="avatar">{{ user.name.charAt(0).toUpperCase() }}</div>
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-semibold text-slate-800">{{ user.name }}</p>
+                  <p *ngIf="user.username" class="text-xs text-slate-400">@{{ user.username }}</p>
+                </div>
+              </div>
+            </td>
+            <td class="text-sm text-slate-600">{{ user.email }}</td>
+            <td>
+              <span class="role-badge" [class]="user.role === 'admin' ? 'role-admin' : user.role === 'owner' ? 'role-owner' : 'role-user'">
+                {{ user.role || 'user' }}
+              </span>
+            </td>
+            <td>
+              <span class="status-dot" [class]="user.is_active ? 'active' : 'inactive'"></span>
+              {{ user.is_active ? 'Active' : 'Inactive' }}
+            </td>
+            <td class="text-sm font-semibold text-slate-700">{{ user.points }}</td>
+            <td>
+              <div class="flex gap-1">
+                <button (click)="openEdit(user)" class="action-btn" title="Sửa"><i class="fa-solid fa-pen"></i></button>
+                <button (click)="deleteUser(user)" class="action-btn danger" title="Xóa"><i class="fa-solid fa-trash-can"></i></button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="mt-4 flex items-center justify-between">
+      <p class="text-xs text-slate-400">Trang {{ pagination().current_page }} / {{ pagination().last_page }}</p>
+      <div class="flex gap-1">
+        <button (click)="goToPage(pagination().current_page - 1)" [disabled]="pagination().current_page <= 1" class="page-btn"><i class="fa-solid fa-chevron-left"></i></button>
+        <button (click)="goToPage(pagination().current_page + 1)" [disabled]="pagination().current_page >= pagination().last_page" class="page-btn"><i class="fa-solid fa-chevron-right"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div *ngIf="showModal()" class="modal-overlay" (click)="closeModal()">
+    <div class="modal-panel" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="text-lg font-bold text-slate-900">{{ editingUser() ? 'Chỉnh sửa' : 'Thêm người dùng' }}</h3>
+        <button (click)="closeModal()" class="action-btn"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="space-y-4">
+        <div class="filter-group">
+          <label class="filter-label">Họ tên *</label>
+          <input type="text" [ngModel]="formName()" (ngModelChange)="formName.set($event)" class="filter-input" />
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Email *</label>
+          <input type="email" [ngModel]="formEmail()" (ngModelChange)="formEmail.set($event)" class="filter-input" />
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Mật khẩu {{ editingUser() ? '(để trống nếu không đổi)' : '*' }}</label>
+          <input type="password" [ngModel]="formPassword()" (ngModelChange)="formPassword.set($event)" class="filter-input" />
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="filter-group">
+            <label class="filter-label">Vai trò</label>
+            <select [ngModel]="formRole()" (ngModelChange)="formRole.set($event)" class="filter-input">
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+              <option value="owner">Owner</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label">Trạng thái</label>
+            <select [ngModel]="formActive()" (ngModelChange)="formActive.set($event === 'true' || $event === true)" class="filter-input">
+              <option [ngValue]="true">Active</option>
+              <option [ngValue]="false">Inactive</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <button (click)="saveUser()" [disabled]="saving() || !formName() || !formEmail()" class="btn-primary mt-5 w-full">
+        <i [class]="saving() ? 'fa-solid fa-spinner animate-spin' : 'fa-solid fa-check'"></i>
+        {{ saving() ? 'Đang lưu...' : (editingUser() ? 'Cập nhật' : 'Tạo mới') }}
+      </button>
+    </div>
+  </div>
+</div>

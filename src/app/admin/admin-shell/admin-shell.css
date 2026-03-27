@@ -1,33 +1,51 @@
-.admin-shell {
-  font-family: 'Inter', sans-serif;
-}
+/* ═══ tokens ═══ */
+:host { --sidebar-w: 240px; --sidebar-collapsed-w: 68px; --accent: #f97316; --bg: #0f172a; --bg-hover: #1e293b; }
 
-.admin-sidebar {
-  background:
-    radial-gradient(circle at top, rgba(249, 115, 22, 0.14), transparent 26%),
-    linear-gradient(180deg, #eef2f7 0%, #e2e8f0 100%);
-  box-shadow: inset -1px 0 0 rgba(100, 116, 139, 0.12);
-}
+.admin-shell { font-family: 'Inter', system-ui, -apple-system, sans-serif; min-height: 100vh; background: #f1f5f9; color: #0f172a; }
 
-.admin-brand-icon {
-  background: linear-gradient(135deg, #f97316 0%, #ffa953 100%);
-  box-shadow: 0 10px 24px rgba(249, 115, 22, 0.22);
-}
+/* ── topbar (mobile) ── */
+.admin-topbar { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: #fff; border-bottom: 1px solid #e2e8f0; }
+.topbar-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; border: none; background: #f1f5f9; color: #475569; cursor: pointer; font-size: 15px; transition: background 150ms; }
+.topbar-btn:hover { background: #e2e8f0; }
+.topbar-brand img { height: 32px; width: auto; }
+.topbar-spacer { flex: 1; }
 
-.admin-nav-link {
-  color: #334155;
-  border: 1px solid transparent;
-}
+/* ── overlay ── */
+.sidebar-overlay { position: fixed; inset: 0; z-index: 200; background: rgba(15,23,42,.55); backdrop-filter: blur(2px); }
 
-.admin-nav-link:hover {
-  background: rgba(255, 169, 83, 0.12);
-  border-color: rgba(255, 169, 83, 0.36);
-  color: #0f172a;
-}
+/* ── sidebar shared ── */
+.sidebar { flex-direction: column; background: var(--bg); color: #94a3b8; transition: width 220ms cubic-bezier(.4,0,.2,1); overflow: hidden; }
+.sidebar--mobile { position: relative; width: 280px; height: 100%; animation: slideIn 200ms cubic-bezier(.2,0,0,1); }
+@keyframes slideIn { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-.admin-nav-active {
-  background: rgba(249, 115, 22, 0.12);
-  border: 1px solid rgba(255, 169, 83, 0.5);
-  color: #f97316;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
-}
+/* desktop sidebar */
+.admin-layout { display: flex; min-height: 100vh; }
+.admin-layout > .sidebar { position: sticky; top: 0; height: 100vh; width: var(--sidebar-w); flex-shrink: 0; }
+.admin-layout > .sidebar.sidebar--collapsed { width: var(--sidebar-collapsed-w); }
+
+.sidebar-head { display: flex; align-items: center; justify-content: space-between; padding: 20px 16px 16px; border-bottom: 1px solid rgba(255,255,255,.06); }
+.sidebar-logo { height: 36px; width: auto; filter: brightness(0) invert(1); opacity: .9; }
+.sidebar-logo--light { filter: none; }
+.sidebar-toggle { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; border: none; background: rgba(255,255,255,.08); color: #64748b; cursor: pointer; font-size: 11px; transition: all 150ms; }
+.sidebar-toggle:hover { background: rgba(255,255,255,.14); color: #e2e8f0; }
+
+/* ── nav ── */
+.sidebar-nav { list-style: none; margin: 0; padding: 12px 10px; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.sidebar-nav a { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 12px; text-decoration: none; color: #94a3b8; font-size: 13.5px; font-weight: 500; border: 1px solid transparent; transition: all 150ms; white-space: nowrap; }
+.sidebar-nav a i { width: 20px; text-align: center; font-size: 15px; flex-shrink: 0; }
+.sidebar-nav a:hover { background: rgba(255,255,255,.06); color: #e2e8f0; }
+.sidebar-nav a.active { background: linear-gradient(135deg, rgba(249,115,22,.18), rgba(251,146,60,.08)); border-color: rgba(249,115,22,.3); color: #fb923c; font-weight: 600; }
+.sidebar-nav a.active i { color: #f97316; }
+
+/* collapsed nav */
+.sidebar--collapsed .sidebar-nav a { justify-content: center; padding: 10px; }
+.sidebar--collapsed .sidebar-head { justify-content: center; }
+
+/* ── footer ── */
+.sidebar-footer { padding: 14px 16px; border-top: 1px solid rgba(255,255,255,.06); }
+.sidebar-version { font-size: 11px; color: #475569; letter-spacing: .02em; }
+.sidebar-version em { font-style: normal; color: var(--accent); font-weight: 600; }
+
+/* ── main ── */
+.admin-main { flex: 1; min-width: 0; padding: 24px; }
+@media (min-width: 1280px) { .admin-main { padding: 28px 32px; } }

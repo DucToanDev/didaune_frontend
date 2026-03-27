@@ -1,10 +1,4 @@
 import { Routes } from '@angular/router';
-import { AdminHome } from './admin/admin-home/admin-home';
-import { AdminInsights } from './admin/admin-insights/admin-insights';
-import { AdminItineraries } from './admin/admin-itineraries/admin-itineraries';
-import { AdminLocations } from './admin/admin-locations/admin-locations';
-import { AdminPartners } from './admin/admin-partners/admin-partners';
-import { AdminShell } from './admin/admin-shell/admin-shell';
 import { Discover } from './features/discover/discover';
 import { Detail } from './features/detail/detail';
 import { Favorite } from './features/favorite/favorite';
@@ -19,29 +13,23 @@ import { UserShell } from './layout/user-shell';
 export const routes: Routes = [
   {
     path: 'admin',
-    component: AdminShell,
-    children: [
-      { path: '', component: AdminHome, title: 'Admin Dashboard' },
-      { path: 'itineraries', component: AdminItineraries, title: 'Admin Itineraries' },
-      { path: 'insights', component: AdminInsights, title: 'Admin AI Insights' },
-      { path: 'locations', component: AdminLocations, title: 'Admin Locations' },
-      { path: 'partners', component: AdminPartners, title: 'Admin Partners' },
-    ],
+    loadChildren: () =>
+      import('./admin/admin.routes').then((m) => m.adminRoutes),
   },
   {
     path: '',
     component: UserShell,
     children: [
-      { path: '', component: Home, title: 'Trang chu' },
-      { path: 'discover', component: Discover, title: 'Kham pha dia diem' },
+      { path: '', component: Home, title: 'Trang chủ' },
+      { path: 'discover', component: Discover, title: 'Khám phá địa điểm' },
       { path: 'list', redirectTo: 'discover' },
-      { path: 'map', component: MapPage, title: 'Ban do dia diem' },
-      { path: 'planner', component: Planner, title: 'Len lich trinh AI' },
-      { path: 'partner/register', component: PartnerRegister, title: 'Dang ky doi tac' },
-      { path: 'favorite', component: Favorite, title: 'Yeu thich' },
-      { path: 'detail/:slug', component: Detail, title: 'Chi tiet' },
-      { path: 'profile', component: Profile, title: 'Ho so' },
-      { path: 'reviews/:slug', component: Reviews, title: 'Danh gia' },
+      { path: 'map', component: MapPage, title: 'Bản đồ địa điểm' },
+      { path: 'planner', component: Planner, title: 'Lên lịch trình AI' },
+      { path: 'partner/register', component: PartnerRegister, title: 'Đăng ký đối tác' },
+      { path: 'favorite', component: Favorite, title: 'Yêu thích' },
+      { path: 'detail/:slug', component: Detail, title: 'Chi tiết' },
+      { path: 'profile', component: Profile, title: 'Hồ sơ' },
+      { path: 'reviews/:slug', component: Reviews, title: 'Đánh giá' },
     ],
   },
   { path: '**', redirectTo: '' },

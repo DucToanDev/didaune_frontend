@@ -138,7 +138,6 @@ export class LocationApiService {
     areaId?: string;
     categoryId?: string;
     amenityId?: string;
-    search?: string;
     sort?: 'popular' | 'rating' | 'name' | 'new';
     page?: number;
     perPage?: number;
@@ -151,7 +150,6 @@ export class LocationApiService {
       areaId = 'all',
       categoryId = 'all',
       amenityId = 'all',
-      search = '',
       sort = 'popular',
       page = 1,
       perPage = 12,
@@ -187,10 +185,6 @@ export class LocationApiService {
 
     if (amenityId && amenityId !== 'all') {
       params = params.set('amenity', amenityId);
-    }
-
-    if (search.trim()) {
-      params = params.set('search', search.trim());
     }
 
     const backendSort =

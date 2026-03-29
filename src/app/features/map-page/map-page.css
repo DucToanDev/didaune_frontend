@@ -85,6 +85,34 @@
   line-height: 1;
 }
 
+:host ::ng-deep .map-place-marker--cluster {
+  width: 52px;
+  height: 52px;
+}
+
+:host ::ng-deep .map-place-marker--cluster::after {
+  bottom: -8px;
+}
+
+:host ::ng-deep .map-place-marker__count {
+  position: absolute;
+  right: -6px;
+  top: -6px;
+  z-index: 2;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.24);
+}
+
 :host ::ng-deep .map-place-marker.marker-cafe {
   background: linear-gradient(135deg, #f97316, #ea580c);
 }
@@ -136,6 +164,39 @@
 .map-filter-panel {
   position: relative;
   z-index: 10;
+}
+
+.map-filter-sheet {
+  backdrop-filter: blur(10px);
+}
+
+.map-filter-sheet__panel {
+  position: relative;
+  animation: map-filter-sheet-enter 180ms ease-out;
+  border-top-left-radius: 28px;
+  border-top-right-radius: 28px;
+}
+
+.map-filter-sheet__panel::before {
+  content: '';
+  display: block;
+  width: 44px;
+  height: 5px;
+  margin: 0 auto 1rem;
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+@keyframes map-filter-sheet-enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 767px) {

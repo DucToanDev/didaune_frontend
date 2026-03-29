@@ -22,6 +22,7 @@
 
   <a
     routerLink="/favorite"
+    (click)="openFavoriteOrAuth($event)"
     routerLinkActive="text-primary"
     class="flex flex-col items-center text-slate-400 hover:text-slate-600 transition"
   >
@@ -40,6 +41,7 @@
 
   <a
     routerLink="/profile"
+    (click)="openProfileOrAuth($event)"
     routerLinkActive="text-primary"
     class="flex flex-col items-center text-slate-400 hover:text-slate-600 transition"
   >

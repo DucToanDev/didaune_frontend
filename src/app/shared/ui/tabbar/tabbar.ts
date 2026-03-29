@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { DataService } from '../../../core/services/data.service';
 
 @Component({
   selector: 'app-tabbar',
@@ -8,4 +9,25 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   templateUrl: './tabbar.html',
   styleUrl: './tabbar.css',
 })
-export class Tabbar {}
+export class Tabbar {
+  private router = inject(Router);
+  dataService = inject(DataService);
+
+  openProfileOrAuth(event: Event) {
+    if (this.dataService.isAuthenticated()) {
+      return;
+    }
+
+    event.preventDefault();
+    this.dataService.requestAuthModal('login');
+  }
+
+  openFavoriteOrAuth(event: Event) {
+    if (this.dataService.isAuthenticated()) {
+      return;
+    }
+
+    event.preventDefault();
+    this.dataService.requestAuthModal('login');
+  }
+}

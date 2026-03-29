@@ -1,99 +1,58 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
-import { RouterModule } from '@angular/router';
-import { catchError, of } from 'rxjs';
-import {
-  Place,
-  PlaceItineraryDay,
-  PlaceItineraryOverview,
-  PlaceItineraryStop,
-} from '../../core/models/app.models';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import flatpickr from 'flatpickr';
+import type { Instance as FlatpickrInstance } from 'flatpickr/dist/types/instance';
+import { Vietnamese } from 'flatpickr/dist/l10n/vn';
+import { Place } from '../../core/models/app.models';
+import { ItineraryApiService } from '../../core/services/itinerary-api.service';
+import { LocationApiService } from '../../core/services/location-api.service';
 import { DataService } from '../../core/services/data.service';
-import { BACKEND_API_CONFIG } from '../../core/config/backend-api.config';
+import { Subject, debounceTime, distinctUntilChanged, switchMap, of, catchError } from 'rxjs';
 
-interface BackendItineraryMarker {
-  location_id: string;
+type StopCategory = 'food' | 'sightseeing' | 'hotel' | 'shopping';
+
+interface PlannerStop {
+  id: string;
   name: string;
-  lat: number;
-  lng: number;
+  district: string;
+  image: string;
+  startTime: string;
+  endTime: string;
+  note: string;
+  category: StopCategory;
+  cost: number;
+  dayNumber: number;
+  latitude?: number;
+  longitude?: number;
+  placeSlug?: string;
 }
 
-interface BackendItineraryItem {
-  id: number;
-  day_number: number;
-  start_time: string | null;
-  end_time: string | null;
-  activity_title: string;
-  activity_type?: string | null;
-  note: string | null;
-  transport_mode: string | null;
-  estimated_cost: string | null;
-  travel_minutes_from_previous?: number | null;
-  travel_distance_km_from_previous?: string | null;
-  location: {
-    slug: string;
-  } | null;
+interface PlannerMember {
+  id: string;
+  name: string;
+  avatar: string;
+  isOnline: boolean;
 }
 
-interface BackendItineraryDay {
-  day_number: number;
-  date: string | null;
-  theme: string | null;
-  summary: string | null;
-  estimated_cost: string | null;
-  travel_minutes: number;
-  travel_distance_km: string | null;
-  items_count: number;
-  items: BackendItineraryItem[];
+interface GroupedPlannerDay {
+  dayNumber: number;
+  label: string;
+  stops: Array<{
+    stop: PlannerStop;
+    globalIndex: number;
+    travelMinutesFromPrevious: number | null;
+    travelDistanceKmFromPrevious: number | null;
+  }>;
 }
 
-interface BackendItineraryResponse {
-  success: boolean;
-  message: string;
-  data: {
-    id: number;
-    title: string;
-    destination_city: string | null;
-    days: number;
-    budget: string | null;
-    travel_mode: string | null;
-    start_time: string | null;
-    end_time: string | null;
-    preferences_json: {
-      tags?: string[];
-      trip_style?: string | null;
-      companion_type?: string | null;
-      energy_level?: string | null;
-    };
-    overview?: PlaceItineraryOverview;
-    day_summaries?: BackendItineraryDay[];
-    map_markers?: BackendItineraryMarker[];
-    items: BackendItineraryItem[];
-  };
-}
-
-interface PlannerItinerary {
-  id: number;
-  title: string;
-  destination_city: string | null;
-  days: number;
-  budget: string | null;
-  travel_mode: string | null;
-  start_time: string | null;
-  end_time: string | null;
-  preferences_json: {
-    tags?: string[];
-    trip_style?: string | null;
-    companion_type?: string | null;
-    energy_level?: string | null;
-  };
-  overview: PlaceItineraryOverview | null;
-  day_summaries: PlaceItineraryDay[];
-  map_markers: BackendItineraryMarker[];
-  items: PlaceItineraryStop[];
-}
+const CATEGORY_META: Record<StopCategory, { icon: string; label: string; color: string }> = {
+  food: { icon: '🍜', label: 'Ăn uống', color: 'bg-orange-50 text-orange-600' },
+  sightseeing: { icon: '🏖️', label: 'Tham quan', color: 'bg-sky-50 text-sky-600' },
+  hotel: { icon: '🏨', label: 'Nghỉ ngơi', color: 'bg-violet-50 text-violet-600' },
+  shopping: { icon: '🛍️', label: 'Mua sắm', color: 'bg-pink-50 text-pink-600' },
+};
 
 @Component({
   selector: 'app-planner',
@@ -102,202 +61,715 @@ interface PlannerItinerary {
   templateUrl: './planner.html',
   styleUrl: './planner.css',
 })
-export class Planner {
-  private http = inject(HttpClient);
-  public dataService = inject(DataService);
+export class Planner implements AfterViewInit, OnDestroy {
+  @ViewChild('dateRangeInput') private dateRangeInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('timePickerInput') private timePickerInput?: ElementRef<HTMLInputElement>;
 
-  mood = signal<'date' | 'work' | 'photo' | 'group'>('date');
-  budget = signal<'low' | 'medium' | 'high'>('medium');
-  timeOfDay = signal<'morning' | 'afternoon' | 'night'>('afternoon');
+  private locationApi = inject(LocationApiService);
+  private dataService = inject(DataService);
+  private itineraryApi = inject(ItineraryApiService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private datePicker: FlatpickrInstance | null = null;
+  private timePicker: FlatpickrInstance | null = null;
+  private activeTimeTarget: { stopId: string; field: 'start' | 'end' } | null = null;
+  private readonly dateFormatter = new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
 
-  days = signal(1);
-  travelMode = signal('motorbike');
-  cityOptions = signal([
-    { id: 'hcm', label: 'Ho Chi Minh' },
-    { id: 'hn', label: 'Ha Noi' },
-    { id: 'dl', label: 'Da Lat' },
+  readonly categoryMeta = CATEGORY_META;
+  readonly categoryKeys: StopCategory[] = ['food', 'sightseeing', 'hotel', 'shopping'];
+  readonly itineraryId = signal<number | null>(null);
+  readonly isCreateMode = computed(() => this.itineraryId() === null);
+  readonly pageHeading = computed(() => (this.isCreateMode() ? 'Tao lich trinh' : 'Chinh sua chuyen di'));
+  readonly saveLabel = computed(() => (this.isCreateMode() ? 'Tao chuyen di' : 'Luu chuyen di'));
+  loadingItinerary = signal(false);
+  saving = signal(false);
+
+  tripTitle = signal('Chuyến đi cuối tuần');
+  tripDescription = signal('Hẹn hò nhẹ nhàng, thêm vài điểm chill và một bữa brunch đẹp.');
+  coverPreviewUrl = signal('');
+  inviteModalOpen = signal(false);
+  inviteEmail = signal('');
+
+  // ── Date ──
+  startDate = signal('');
+  endDate = signal('');
+
+  tripDays = computed(() => {
+    const s = this.startDate();
+    const e = this.endDate();
+    if (!s || !e) return 0;
+    const diff = new Date(e).getTime() - new Date(s).getTime();
+    return diff > 0 ? Math.ceil(diff / 86_400_000) + 1 : 0;
+  });
+
+  dateRangeLabel = computed(() => {
+    const start = this.startDate();
+    const end = this.endDate();
+    if (!start && !end) return 'Chon khoang ngay cho chuyen di';
+    if (start && !end) return this.formatDisplayDate(start);
+    return `${this.formatDisplayDate(start)} - ${this.formatDisplayDate(end)}`;
+  });
+
+  availableDays = computed(() => {
+    const days = Math.max(this.tripDays(), 1);
+    return Array.from({ length: days }, (_, index) => index + 1);
+  });
+
+  groupedDays = computed<GroupedPlannerDay[]>(() => {
+    const grouped = new Map<number, GroupedPlannerDay>();
+
+    this.availableDays().forEach((dayNumber) => {
+      grouped.set(dayNumber, {
+        dayNumber,
+        label: `Ngay ${dayNumber}`,
+        stops: [],
+      });
+    });
+
+    this.stops().forEach((stop, globalIndex) => {
+      const normalizedDay = Math.min(Math.max(stop.dayNumber || 1, 1), this.availableDays().length);
+      const day = grouped.get(normalizedDay);
+      if (!day) return;
+
+      const previousStop = day.stops.at(-1)?.stop ?? null;
+      day.stops.push({
+        stop: { ...stop, dayNumber: normalizedDay },
+        globalIndex,
+        travelMinutesFromPrevious: previousStop ? this.estimateTravelMinutes(previousStop, stop) : null,
+        travelDistanceKmFromPrevious: previousStop ? this.estimateDistanceKm(previousStop, stop) : null,
+      });
+    });
+
+    return Array.from(grouped.values()).filter((day) => day.stops.length > 0);
+  });
+
+  // ── Cost ──
+  totalCost = computed(() =>
+    this.stops().reduce((sum, stop) => sum + (stop.cost || 0), 0),
+  );
+
+  // ── Undo ──
+  deletedStop = signal<{ stop: PlannerStop; index: number } | null>(null);
+  showUndoToast = signal(false);
+  private undoTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  // ── Drag & Drop ──
+  dragIndex = signal<number | null>(null);
+
+  // ── Save validation ──
+  showTitleWarning = signal(false);
+
+  // ── Search Place Modal ──
+  searchModalOpen = signal(false);
+  searchQuery = signal('');
+  searchResults = signal<Place[]>([]);
+  searchLoading = signal(false);
+  private searchSubject = new Subject<string>();
+
+  // ── Nearby & Trending ──
+  nearbyPlaces = signal<Place[]>([]);
+  nearbyLoading = signal(false);
+  trendingPlaces = signal<Place[]>([]);
+  trendingLoading = signal(false);
+  locationDenied = signal(false);
+
+  members = signal<PlannerMember[]>([
+    {
+      id: 'owner',
+      name: 'Toàn',
+      avatar: 'https://ui-avatars.com/api/?name=Toan&background=f97316&color=fff',
+      isOnline: true,
+    },
   ]);
 
-  loading = signal(false);
-  errorMessage = signal('');
-  generated = signal<PlannerItinerary | null>(null);
+  stops = signal<PlannerStop[]>([
+    {
+      id: '1',
+      name: 'The Hidden Oasis',
+      district: 'Quận 12, TP.HCM',
+      image:
+        'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=300',
+      startTime: '08:30',
+      endTime: '10:00',
+      note: '',
+      category: 'food',
+      cost: 0,
+      dayNumber: 1,
+    },
+  ]);
 
-  itineraryByDay = computed(() => this.generated()?.day_summaries ?? []);
-  markerCount = computed(() => this.generated()?.map_markers.length ?? 0);
+  constructor() {
+    const routeId = this.route.snapshot.paramMap.get('id');
+    this.itineraryId.set(routeId ? Number(routeId) : null);
 
-  setMood(value: 'date' | 'work' | 'photo' | 'group') {
-    this.mood.set(value);
-  }
-
-  setBudget(value: 'low' | 'medium' | 'high') {
-    this.budget.set(value);
-  }
-
-  setTime(value: 'morning' | 'afternoon' | 'night') {
-    this.timeOfDay.set(value);
-  }
-
-  generateItinerary() {
-    this.loading.set(true);
-    this.errorMessage.set('');
-
-    const payload = {
-      destination_city: this.cityLabelForApi(),
-      days: this.days(),
-      budget: this.budgetValue(),
-      travel_mode: this.travelMode(),
-      start_time: this.timeWindow().start,
-      end_time: this.timeWindow().end,
-      preferences: this.preferencesForMood(),
-      trip_style: this.tripStyleForMood(),
-      companion_type: this.companionTypeForMood(),
-      energy_level: this.energyLevelForTime(),
-    };
-
-    this.http
-      .post<BackendItineraryResponse>(
-        `${BACKEND_API_CONFIG.baseUrl}/itineraries/generate`,
-        payload
-      )
+    this.searchSubject
       .pipe(
-        catchError((error) => {
-          this.errorMessage.set(
-            error?.error?.message || 'Khong the tao lich trinh AI luc nay.'
-          );
-          this.loading.set(false);
-          return of(null);
-        })
+        debounceTime(350),
+        distinctUntilChanged(),
+        switchMap((query) => {
+          if (!query.trim()) {
+            return of([]);
+          }
+          this.searchLoading.set(true);
+          return this.locationApi
+            .fetchLocationsPaginated({
+              cityId: this.dataService.currentCityId(),
+              search: query,
+              perPage: 10,
+            })
+            .pipe(
+              catchError(() => of({ data: [], meta: {} })),
+            );
+        }),
       )
-      .subscribe((response) => {
-        if (!response?.data) {
-          return;
-        }
+      .subscribe((result) => {
+        const places = Array.isArray(result) ? result : (result as any).data ?? [];
+        this.searchResults.set(places);
+        this.searchLoading.set(false);
+      });
 
-        this.mapGeneratedItinerary(response.data);
+    if (this.itineraryId()) {
+      this.loadItinerary(this.itineraryId() as number);
+    }
+  }
+
+  ngAfterViewInit() {
+    this.initDatePicker();
+    this.initTimePicker();
+  }
+
+  ngOnDestroy() {
+    this.datePicker?.destroy();
+    this.timePicker?.destroy();
+  }
+
+  // ── Cover ──
+  onCoverSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.coverPreviewUrl.set(String(reader.result ?? ''));
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ── Invite ──
+  openInviteModal() {
+    this.inviteModalOpen.set(true);
+  }
+
+  closeInviteModal() {
+    this.inviteModalOpen.set(false);
+    this.inviteEmail.set('');
+  }
+
+  sendInvite() {
+    const email = this.inviteEmail().trim();
+    if (!email) return;
+
+    const name = email.split('@')[0] || 'Bạn mới';
+    this.members.update((m) => [
+      ...m,
+      {
+        id: Math.random().toString(36).slice(2, 10),
+        name,
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=e2e8f0&color=334155`,
+        isOnline: false,
+      },
+    ]);
+    this.closeInviteModal();
+  }
+
+  // ── Search Place Modal ──
+  openSearchModal() {
+    this.searchModalOpen.set(true);
+    this.searchQuery.set('');
+    this.searchResults.set([]);
+    this.loadNearbyPlaces();
+    this.loadTrendingPlaces();
+  }
+
+  private loadNearbyPlaces() {
+    const coords = this.dataService.currentCoordinates();
+    if (coords) {
+      this.nearbyLoading.set(true);
+      this.locationApi
+        .fetchNearbyLocations(coords.lat, coords.lng, 5, this.dataService.currentCityId())
+        .pipe(catchError(() => of([])))
+        .subscribe((places) => {
+          this.nearbyPlaces.set(places.slice(0, 8));
+          this.nearbyLoading.set(false);
+        });
+    } else {
+      this.requestLocation();
+    }
+  }
+
+  private loadTrendingPlaces() {
+    this.trendingLoading.set(true);
+    this.locationApi
+      .fetchTrendingLocations(this.dataService.currentCityId())
+      .pipe(catchError(() => of([])))
+      .subscribe((places) => {
+        this.trendingPlaces.set(places.slice(0, 8));
+        this.trendingLoading.set(false);
       });
   }
 
-  private mapGeneratedItinerary(data: BackendItineraryResponse['data']) {
-    const slugs = data.items
-      .map((item) => item.location?.slug)
-      .filter((slug): slug is string => Boolean(slug));
+  requestLocation() {
+    if (!navigator.geolocation) {
+      this.locationDenied.set(true);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        this.dataService.setCurrentCoordinates(coords);
+        this.loadNearbyPlaces();
+      },
+      () => {
+        this.locationDenied.set(true);
+      },
+    );
+  }
 
-    this.dataService.getPlaces().subscribe((places) => {
-      const placeMap = new Map(places.map((place) => [place.slug, place]));
-      const items = data.items.map((item) => this.mapStop(item, placeMap));
-      const daySummaries = (data.day_summaries ?? []).map((day) => ({
-        ...day,
-        items: day.items.map((item) => this.mapStop(item, placeMap)),
-      }));
+  openDatePicker() {
+    this.datePicker?.open();
+  }
 
-      this.generated.set({
-        id: data.id,
-        title: data.title,
-        destination_city: data.destination_city,
-        days: data.days,
-        budget: data.budget,
-        travel_mode: data.travel_mode,
-        start_time: data.start_time,
-        end_time: data.end_time,
-        preferences_json: data.preferences_json,
-        overview: data.overview ?? null,
-        day_summaries: daySummaries,
-        map_markers: data.map_markers ?? [],
-        items,
+  openTimePicker(stopId: string, field: 'start' | 'end', value: string) {
+    this.activeTimeTarget = { stopId, field };
+    this.timePicker?.setDate(value || '09:00', false, 'H:i');
+    this.timePicker?.open();
+  }
+
+  closeSearchModal() {
+    this.searchModalOpen.set(false);
+    this.searchQuery.set('');
+    this.searchResults.set([]);
+  }
+
+  onSearchInput(query: string) {
+    this.searchQuery.set(query);
+    this.searchSubject.next(query);
+  }
+
+  addPlaceAsStop(place: Place) {
+    const category = this.guessCategory(place);
+    this.stops.update((stops) => [
+      ...stops,
+      {
+        id: Math.random().toString(36).slice(2, 10),
+        name: place.name,
+        district: place.area_name || place.district_name || '',
+        image: place.image || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=300',
+        startTime: '10:00',
+        endTime: '11:30',
+        note: '',
+        category,
+        cost: 0,
+        dayNumber: this.availableDays()[0] ?? 1,
+        latitude: place.latitude,
+        longitude: place.longitude,
+        placeSlug: place.slug,
+      },
+    ]);
+    this.closeSearchModal();
+  }
+
+  addEmptyStop() {
+    this.stops.update((stops) => [
+      ...stops,
+      {
+        id: Math.random().toString(36).slice(2, 10),
+        name: 'Địa điểm mới',
+        district: 'Thêm khu vực',
+        image:
+          'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=300',
+        startTime: '10:00',
+        endTime: '11:30',
+        note: '',
+        category: 'sightseeing',
+        cost: 0,
+        dayNumber: this.availableDays()[0] ?? 1,
+      },
+    ]);
+  }
+
+  isPlaceAlreadyAdded(slug: string): boolean {
+    return this.stops().some((s) => s.placeSlug === slug);
+  }
+
+  removeStop(stopId: string) {
+    const stops = this.stops();
+    const index = stops.findIndex((s) => s.id === stopId);
+    if (index === -1) return;
+
+    const removed = stops[index];
+    this.deletedStop.set({ stop: removed, index });
+    this.stops.update((s) => s.filter((x) => x.id !== stopId));
+
+    this.showUndoToast.set(true);
+    if (this.undoTimeout) clearTimeout(this.undoTimeout);
+    this.undoTimeout = setTimeout(() => {
+      this.showUndoToast.set(false);
+      this.deletedStop.set(null);
+    }, 5000);
+  }
+
+  undoDelete() {
+    const deleted = this.deletedStop();
+    if (!deleted) return;
+
+    this.stops.update((stops) => {
+      const copy = [...stops];
+      copy.splice(deleted.index, 0, deleted.stop);
+      return copy;
+    });
+
+    this.showUndoToast.set(false);
+    this.deletedStop.set(null);
+    if (this.undoTimeout) clearTimeout(this.undoTimeout);
+  }
+
+  updateStopStartTime(stopId: string, value: string) {
+    this.stops.update((stops) =>
+      stops.map((s) => (s.id === stopId ? { ...s, startTime: value } : s)),
+    );
+  }
+
+  updateStopEndTime(stopId: string, value: string) {
+    this.stops.update((stops) =>
+      stops.map((s) => (s.id === stopId ? { ...s, endTime: value } : s)),
+    );
+  }
+
+  updateStopNote(stopId: string, value: string) {
+    this.stops.update((stops) =>
+      stops.map((s) => (s.id === stopId ? { ...s, note: value } : s)),
+    );
+  }
+
+  updateStopCategory(stopId: string, value: StopCategory) {
+    this.stops.update((stops) =>
+      stops.map((s) => (s.id === stopId ? { ...s, category: value } : s)),
+    );
+  }
+
+  updateStopCost(stopId: string, value: number) {
+    this.stops.update((stops) =>
+      stops.map((s) => (s.id === stopId ? { ...s, cost: value || 0 } : s)),
+    );
+  }
+
+  updateStopDay(stopId: string, value: number) {
+    this.stops.update((stops) =>
+      stops.map((s) => (s.id === stopId ? { ...s, dayNumber: Number(value) || 1 } : s)),
+    );
+  }
+
+  // ── Drag & Drop ──
+  onDragStart(event: DragEvent, index: number) {
+    this.dragIndex.set(index);
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+    }
+  }
+
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+  }
+
+  onDrop(event: DragEvent, toIndex: number) {
+    event.preventDefault();
+    const fromIndex = this.dragIndex();
+    if (fromIndex === null || fromIndex === toIndex) return;
+
+    this.stops.update((stops) => {
+      const copy = [...stops];
+      const [moved] = copy.splice(fromIndex, 1);
+      copy.splice(toIndex, 0, moved);
+      return copy;
+    });
+    this.dragIndex.set(null);
+  }
+
+  onDragEnd() {
+    this.dragIndex.set(null);
+  }
+
+  // ── Save ──
+  saveTrip() {
+    if (!this.tripTitle().trim()) {
+      this.showTitleWarning.set(true);
+      setTimeout(() => this.showTitleWarning.set(false), 3000);
+      return;
+    }
+
+    this.saving.set(true);
+    const payload = this.buildPayload();
+    const request$ = this.isCreateMode()
+      ? this.itineraryApi.createItinerary(payload)
+      : this.itineraryApi.updateItinerary(this.itineraryId() as number, payload);
+
+    request$
+      .pipe(
+        catchError(() => {
+          this.saving.set(false);
+          return of(null);
+        }),
+      )
+      .subscribe((result) => {
+        this.saving.set(false);
+        if (!result) return;
+
+        this.itineraryId.set(result.id);
+        this.router.navigate(['/planner', result.id, 'edit']);
       });
-      this.loading.set(false);
+  }
+
+  formatCurrency(value: number): string {
+    return value.toLocaleString('vi-VN');
+  }
+
+  formatTravelTime(minutes: number | null): string {
+    if (!minutes || minutes <= 0) return 'Dang cap nhat';
+    if (minutes < 60) return `${minutes} phut`;
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return remainingMinutes ? `${hours} gio ${remainingMinutes} phut` : `${hours} gio`;
+  }
+
+  formatTravelDistance(distanceKm: number | null): string {
+    if (distanceKm === null || Number.isNaN(distanceKm)) return '';
+    return `${distanceKm.toFixed(1)} km`;
+  }
+
+  shouldShowDayHeading(index: number): boolean {
+    if (index === 0) return true;
+    const stops = this.stops();
+    return stops[index - 1]?.dayNumber !== stops[index]?.dayNumber;
+  }
+
+  shouldShowTravelBlock(index: number): boolean {
+    if (index === 0) return false;
+    const stops = this.stops();
+    return stops[index - 1]?.dayNumber === stops[index]?.dayNumber;
+  }
+
+  getDayLabel(dayNumber: number): string {
+    return `Ngay ${dayNumber}`;
+  }
+
+  getTravelMinutesForIndex(index: number): number | null {
+    if (!this.shouldShowTravelBlock(index)) return null;
+    const stops = this.stops();
+    return this.estimateTravelMinutes(stops[index - 1], stops[index]);
+  }
+
+  getTravelDistanceForIndex(index: number): number | null {
+    if (!this.shouldShowTravelBlock(index)) return null;
+    const stops = this.stops();
+    return this.estimateDistanceKm(stops[index - 1], stops[index]);
+  }
+
+  private loadItinerary(id: number) {
+    this.loadingItinerary.set(true);
+    this.itineraryApi
+      .getItinerary(id)
+      .pipe(
+        catchError(() => {
+          this.loadingItinerary.set(false);
+          return of(null);
+        }),
+      )
+      .subscribe((itinerary) => {
+        this.loadingItinerary.set(false);
+        if (!itinerary) return;
+
+        this.tripTitle.set(itinerary.title || '');
+        this.tripDescription.set(itinerary.description || '');
+        this.coverPreviewUrl.set(itinerary.cover_image || '');
+        this.startDate.set(itinerary.start_date || '');
+        this.endDate.set(itinerary.end_date || '');
+        this.members.set(
+          (itinerary.members || []).map((member, index) => ({
+            id: member.id || `member-${index + 1}`,
+            name: member.name,
+            avatar:
+              member.avatar ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=e2e8f0&color=334155`,
+            isOnline: Boolean(member.is_online),
+          })),
+        );
+        this.stops.set(
+          (itinerary.items || []).map((item, index) => ({
+            id: String(item.id),
+            name: item.activity_title || item.location?.name || `Diem dung ${index + 1}`,
+            district: item.location?.full_address || '',
+            image: this.coverPreviewUrl() || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=300',
+            startTime: item.start_time || '09:00',
+            endTime: item.end_time || '10:00',
+            note: item.note || '',
+            category: 'sightseeing',
+            cost: Number(item.estimated_cost || 0),
+            dayNumber: item.day_number || 1,
+            latitude: item.location?.latitude || undefined,
+            longitude: item.location?.longitude || undefined,
+            placeSlug: item.location?.slug,
+          })),
+        );
+      });
+  }
+
+  private buildPayload() {
+    return {
+      title: this.tripTitle().trim(),
+      description: this.tripDescription().trim() || null,
+      cover_image: this.coverPreviewUrl() || null,
+      itinerary_type: 'manual' as const,
+      start_date: this.startDate() || null,
+      end_date: this.endDate() || null,
+      days: Math.max(this.tripDays(), 1),
+      budget: this.totalCost(),
+      members: this.members().map((member) => ({
+        id: member.id,
+        name: member.name,
+        avatar: member.avatar,
+        is_online: member.isOnline,
+      })),
+      items: this.stops().map((stop, index) => ({
+        day_number: stop.dayNumber,
+        start_time: stop.startTime || null,
+        end_time: stop.endTime || null,
+        location_id: null,
+        activity_title: stop.name,
+        activity_type: stop.category,
+        note: stop.note || null,
+        estimated_cost: stop.cost || 0,
+        travel_minutes_from_previous: this.getTravelMinutesForIndex(index),
+        travel_distance_km_from_previous: this.getTravelDistanceForIndex(index),
+        sort_order: index + 1,
+      })),
+    };
+  }
+
+  private initDatePicker() {
+    const input = this.dateRangeInput?.nativeElement;
+    if (!input) return;
+
+    this.datePicker?.destroy();
+    this.datePicker = flatpickr(input, {
+      mode: 'range',
+      locale: Vietnamese,
+      dateFormat: 'Y-m-d',
+      defaultDate: this.getDefaultDateRange(),
+      disableMobile: true,
+      monthSelectorType: 'static',
+      nextArrow: '<i class="fa-solid fa-chevron-right"></i>',
+      prevArrow: '<i class="fa-solid fa-chevron-left"></i>',
+      onChange: (selectedDates) => {
+        const [start, end] = selectedDates;
+        this.startDate.set(start ? this.toIsoDate(start) : '');
+        this.endDate.set(end ? this.toIsoDate(end) : '');
+      },
     });
   }
 
-  private mapStop(
-    item: BackendItineraryItem,
-    placeMap: Map<string, Place>
-  ): PlaceItineraryStop {
-    return {
-      id: item.id,
-      day_number: item.day_number,
-      start_time: item.start_time,
-      end_time: item.end_time,
-      activity_title: item.activity_title,
-      activity_type: item.activity_type ?? null,
-      note: item.note,
-      transport_mode: item.transport_mode,
-      estimated_cost: item.estimated_cost,
-      travel_minutes_from_previous: item.travel_minutes_from_previous ?? null,
-      travel_distance_km_from_previous: item.travel_distance_km_from_previous ?? null,
-      location: item.location?.slug ? placeMap.get(item.location.slug) ?? null : null,
-    };
+  private initTimePicker() {
+    const input = this.timePickerInput?.nativeElement;
+    if (!input) return;
+
+    this.timePicker?.destroy();
+    this.timePicker = flatpickr(input, {
+      locale: Vietnamese,
+      enableTime: true,
+      noCalendar: true,
+      time_24hr: true,
+      dateFormat: 'H:i',
+      disableMobile: true,
+      minuteIncrement: 15,
+      onChange: (selectedDates, dateStr) => {
+        if (!this.activeTimeTarget || !dateStr) return;
+        const { stopId, field } = this.activeTimeTarget;
+        if (field === 'start') {
+          this.updateStopStartTime(stopId, dateStr);
+        } else {
+          this.updateStopEndTime(stopId, dateStr);
+        }
+      },
+      onClose: () => {
+        this.activeTimeTarget = null;
+      },
+    });
   }
 
-  private budgetValue(): number {
-    if (this.budget() === 'low') {
-      return 500000;
+  private getDefaultDateRange(): string[] {
+    return [this.startDate(), this.endDate()].filter(Boolean) as string[];
+  }
+
+  private toIsoDate(value: Date): string {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private formatDisplayDate(value: string): string {
+    if (!value) return '';
+    const date = new Date(`${value}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? value : this.dateFormatter.format(date);
+  }
+
+  private estimateTravelMinutes(from: PlannerStop, to: PlannerStop): number {
+    const distance = this.estimateDistanceKm(from, to);
+    if (distance === null) return 15;
+    return Math.max(5, Math.round((distance / 25) * 60));
+  }
+
+  private estimateDistanceKm(from: PlannerStop, to: PlannerStop): number | null {
+    if (
+      from.latitude == null ||
+      from.longitude == null ||
+      to.latitude == null ||
+      to.longitude == null
+    ) {
+      return null;
     }
 
-    if (this.budget() === 'high') {
-      return 2000000;
-    }
-
-    return 1200000;
+    const earthRadiusKm = 6371;
+    const dLat = this.toRadians(to.latitude - from.latitude);
+    const dLng = this.toRadians(to.longitude - from.longitude);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.toRadians(from.latitude)) *
+        Math.cos(this.toRadians(to.latitude)) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return earthRadiusKm * c;
   }
 
-  private timeWindow() {
-    if (this.timeOfDay() === 'morning') {
-      return { start: '08:00', end: '14:00' };
-    }
-
-    if (this.timeOfDay() === 'night') {
-      return { start: '17:00', end: '23:00' };
-    }
-
-    return { start: '12:00', end: '22:00' };
+  private toRadians(value: number): number {
+    return (value * Math.PI) / 180;
   }
 
-  private preferencesForMood(): string[] {
-    const mapping: Record<typeof this.mood extends () => infer T ? T & string : string, string[]> = {
-      date: ['Hen ho', 'Nha hang', 'check-in'],
-      work: ['Quan ca phe', 'Lam viec', 'Yen tinh'],
-      photo: ['Quan ca phe', 'check-in', 'Song ao'],
-      group: ['Quan ca phe', 'Nha hang', 'Tu tap'],
-    };
-
-    return mapping[this.mood()] ?? ['Quan ca phe'];
-  }
-
-  private tripStyleForMood(): string {
-    const mapping = {
-      date: 'romantic',
-      work: 'focused',
-      photo: 'check-in',
-      group: 'social',
-    } as const;
-
-    return mapping[this.mood()];
-  }
-
-  private companionTypeForMood(): string {
-    const mapping = {
-      date: 'couple',
-      work: 'solo',
-      photo: 'friends',
-      group: 'group',
-    } as const;
-
-    return mapping[this.mood()];
-  }
-
-  private energyLevelForTime(): string {
-    const mapping = {
-      morning: 'balanced',
-      afternoon: 'relaxed',
-      night: 'high',
-    } as const;
-
-    return mapping[this.timeOfDay()];
-  }
-
-  private cityLabelForApi(): string {
-    const cityId = this.dataService.currentCityId();
-    return this.cityOptions().find((city) => city.id === cityId)?.label ?? 'Ho Chi Minh';
+  private guessCategory(place: Place): StopCategory {
+    const cats = [...place.categories, ...place.source_categories].map((c) => c.toLowerCase());
+    if (cats.some((c) => c.includes('hotel') || c.includes('homestay'))) return 'hotel';
+    if (cats.some((c) => c.includes('restaurant') || c.includes('cafe') || c.includes('coffee'))) return 'food';
+    if (cats.some((c) => c.includes('shop') || c.includes('store') || c.includes('market'))) return 'shopping';
+    return 'sightseeing';
   }
 }
+

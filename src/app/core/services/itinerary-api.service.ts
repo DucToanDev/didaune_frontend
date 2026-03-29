@@ -85,6 +85,15 @@ export interface AdminItinerary {
   id: number;
   user_id: number | null;
   title: string;
+  itinerary_type?: 'manual' | 'ai';
+  cover_image?: string | null;
+  description?: string | null;
+  members?: Array<{
+    id?: string | null;
+    name: string;
+    avatar?: string | null;
+    is_online?: boolean;
+  }>;
   destination_city: string | null;
   start_date: string | null;
   end_date: string | null;
@@ -118,6 +127,9 @@ export interface AdminItinerary {
 export interface GenerateItineraryPayload {
   user_id?: number | null;
   title?: string | null;
+  description?: string | null;
+  cover_image?: string | null;
+  itinerary_type?: 'manual' | 'ai';
   destination_city?: string | null;
   start_date?: string | null;
   end_date?: string | null;
@@ -132,6 +144,26 @@ export interface GenerateItineraryPayload {
   energy_level?: string | null;
   max_distance_km_per_day?: number | null;
   must_include_location_ids?: string[];
+  members?: Array<{
+    id?: string | null;
+    name: string;
+    avatar?: string | null;
+    is_online?: boolean;
+  }>;
+  items?: Array<{
+    day_number?: number;
+    start_time?: string | null;
+    end_time?: string | null;
+    location_id?: string | null;
+    activity_title?: string | null;
+    activity_type?: string | null;
+    note?: string | null;
+    transport_mode?: string | null;
+    estimated_cost?: number | null;
+    travel_minutes_from_previous?: number | null;
+    travel_distance_km_from_previous?: number | null;
+    sort_order?: number | null;
+  }>;
 }
 
 export interface UpdateItineraryPayload extends GenerateItineraryPayload {}
@@ -192,6 +224,12 @@ export class ItineraryApiService {
       .pipe(map((response) => this.mapItinerary(response.data)));
   }
 
+  createItinerary(payload: UpdateItineraryPayload): Observable<AdminItinerary> {
+    return this.http
+      .post<BackendApiEnvelope<BackendItinerary>>(`${this.apiBaseUrl}/itineraries`, payload)
+      .pipe(map((response) => this.mapItinerary(response.data)));
+  }
+
   updateItinerary(id: number, payload: UpdateItineraryPayload): Observable<AdminItinerary> {
     return this.http
       .patch<BackendApiEnvelope<BackendItinerary>>(`${this.apiBaseUrl}/itineraries/${id}`, payload)
@@ -218,6 +256,10 @@ export class ItineraryApiService {
       id: item.id,
       user_id: item.user_id,
       title: item.title,
+      itinerary_type: item.itinerary_type ?? 'manual',
+      cover_image: item.cover_image ?? null,
+      description: item.description ?? null,
+      members: item.members ?? [],
       destination_city: item.destination_city,
       start_date: item.start_date,
       end_date: item.end_date,
@@ -307,6 +349,15 @@ interface BackendItinerary {
   id: number;
   user_id: number | null;
   title: string;
+  itinerary_type?: 'manual' | 'ai';
+  cover_image?: string | null;
+  description?: string | null;
+  members?: Array<{
+    id?: string | null;
+    name: string;
+    avatar?: string | null;
+    is_online?: boolean;
+  }>;
   destination_city: string | null;
   start_date: string | null;
   end_date: string | null;

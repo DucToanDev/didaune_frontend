@@ -28,6 +28,8 @@ interface LeafletMap {
     bounds: [[number, number], [number, number]],
     options?: { padding?: [number, number] },
   ): LeafletMap;
+  getZoom(): number;
+  on(event: string, handler: () => void): LeafletMap;
   remove(): void;
 }
 
@@ -107,6 +109,14 @@ interface NearbyCategorySummary {
   count: number;
 }
 
+interface MapMarkerCluster {
+  type: 'single' | 'cluster';
+  lat: number;
+  lng: number;
+  category: string | null;
+  places: Place[];
+}
+
 @Component({
   selector: 'app-map-page',
   standalone: true,
@@ -118,6 +128,7 @@ export class MapPage implements AfterViewInit {
   private readonly pageSize = 12;
   private readonly nearbyRadiusKm = 5;
   private readonly nearbyRadiusMeters = 5000;
+  private readonly markerClusterMaxZoom = 13;
   private readonly markerCategoryPriority = [
     'cafe',
     'restaurant',
@@ -143,6 +154,7 @@ export class MapPage implements AfterViewInit {
   selectedMapCategory = signal('all');
   mapFilterOpen = signal(false);
   locating = signal(false);
+  currentMapZoom = signal(12);
   private leafletReady = signal(false);
   private map?: LeafletMap;
   private markers: LeafletMarker[] = [];
@@ -364,7 +376,8 @@ export class MapPage implements AfterViewInit {
         return;
       }
 
-      this.renderMarkers(this.geocodedPlaces());
+      const places = this.geocodedPlaces();
+      untracked(() => this.renderMarkers(places, true));
     });
 
     effect(() => {
@@ -404,6 +417,11 @@ export class MapPage implements AfterViewInit {
     this.map = leaflet
       .map(container, { zoomControl: true })
       .setView([10.7769, 106.7009], 12);
+    this.currentMapZoom.set(this.map.getZoom());
+    this.map.on('zoomend', () => {
+      this.currentMapZoom.set(this.map?.getZoom() ?? 12);
+      this.renderMarkers(this.geocodedPlaces(), false);
+    });
 
     leaflet
       .tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -465,7 +483,7 @@ export class MapPage implements AfterViewInit {
     this.mapFilterOpen.set(false);
   }
 
-  private renderMarkers(places: Place[]) {
+  private renderMarkers(places: Place[], fitToBounds: boolean) {
     if (!this.map || !window.L) {
       return;
     }
@@ -474,7 +492,6 @@ export class MapPage implements AfterViewInit {
 
     if (!places.length) {
       this.selectedPlace.set(null);
-      this.map.setView([10.7769, 106.7009], 12);
       return;
     }
 
@@ -484,15 +501,42 @@ export class MapPage implements AfterViewInit {
     }
 
     const bounds: [number, number][] = [];
+    const markerClusters = this.buildMarkerClusters(places);
 
-    this.markers = places.map((place) => {
-      const lat = place.latitude as number;
-      const lng = place.longitude as number;
-      bounds.push([lat, lng]);
+    this.markers = markerClusters.map((cluster) => {
+      bounds.push([cluster.lat, cluster.lng]);
+
+      if (cluster.type === 'cluster') {
+        return window
+          .L!.marker([cluster.lat, cluster.lng], {
+            icon: this.buildClusterMarkerIcon(cluster),
+          })
+          .addTo(this.map!)
+          .bindTooltip(
+            `${this.escapeHtml(
+              this.dataService.getCategoryLabel(cluster.category ?? 'all'),
+            )}: ${cluster.places.length} địa điểm`,
+            {
+              direction: 'top',
+              offset: [0, -14],
+              opacity: 0.95,
+              sticky: true,
+            },
+          )
+          .on('click', () => {
+            this.selectedPlace.set(cluster.places[0] ?? null);
+            this.map?.setView(
+              [cluster.lat, cluster.lng],
+              Math.min(this.currentMapZoom() + 2, 16),
+            );
+          });
+      }
+
+      const place = cluster.places[0];
       const markerIcon = this.buildMarkerIcon(place);
 
-      const marker = window
-        .L!.marker([lat, lng], { icon: markerIcon })
+      return window
+        .L!.marker([cluster.lat, cluster.lng], { icon: markerIcon })
         .addTo(this.map!)
         .bindTooltip(this.escapeHtml(place.name), {
           direction: 'top',
@@ -501,12 +545,16 @@ export class MapPage implements AfterViewInit {
           sticky: true,
         })
         .on('click', () => this.selectPlace(place));
-
-      return marker;
     });
 
     if (bounds.length === 1) {
-      this.map.setView(bounds[0], 15);
+      if (fitToBounds) {
+        this.map.setView(bounds[0], 15);
+      }
+      return;
+    }
+
+    if (!fitToBounds) {
       return;
     }
 
@@ -620,6 +668,103 @@ export class MapPage implements AfterViewInit {
     }
 
     return place.categories[0] ?? null;
+  }
+
+  private buildClusterMarkerIcon(cluster: MapMarkerCluster): LeafletIcon {
+    const visual = this.getMarkerVisualConfig(
+      cluster.category,
+      cluster.places[0]?.category_labels[0],
+    );
+
+    return window.L!.divIcon({
+      className: 'map-place-marker-wrapper',
+      html: `
+        <div class="map-place-marker map-place-marker--cluster ${visual.markerClass}" aria-label="${this.escapeHtml(visual.label)}">
+          <span class="map-place-marker__icon">
+            <i class="fa-solid ${this.escapeHtml(visual.iconClass)}" aria-hidden="true"></i>
+          </span>
+          <span class="map-place-marker__count">${cluster.places.length}</span>
+        </div>
+      `,
+      iconSize: [52, 64],
+      iconAnchor: [26, 64],
+      popupAnchor: [0, -42],
+      tooltipAnchor: [0, -48],
+    });
+  }
+
+  private getMarkerVisualConfig(category: string | null, fallbackLabel?: string) {
+    const config = CATEGORY_CONFIG.find((item) => item.id === category);
+
+    return {
+      iconClass: config?.icon ?? 'fa-location-dot',
+      markerClass: category
+        ? `marker-${this.escapeHtml(category)}`
+        : 'marker-default',
+      label: config?.name ?? fallbackLabel ?? 'Địa điểm',
+    };
+  }
+
+  private buildMarkerClusters(places: Place[]): MapMarkerCluster[] {
+    if (this.currentMapZoom() > this.markerClusterMaxZoom) {
+      return places.map((place) => ({
+        type: 'single' as const,
+        lat: place.latitude as number,
+        lng: place.longitude as number,
+        category: this.getMarkerCategory(place),
+        places: [place],
+      }));
+    }
+
+    const cellSize = this.getClusterCellSize(this.currentMapZoom());
+    const clusterMap = new Map<string, Place[]>();
+
+    for (const place of places) {
+      const category = this.getMarkerCategory(place) ?? 'default';
+      const latBucket = Math.round((place.latitude as number) / cellSize);
+      const lngBucket = Math.round((place.longitude as number) / cellSize);
+      const key = `${category}:${latBucket}:${lngBucket}`;
+      const bucket = clusterMap.get(key) ?? [];
+      bucket.push(place);
+      clusterMap.set(key, bucket);
+    }
+
+    return [...clusterMap.values()].map((bucket) => {
+      const lat =
+        bucket.reduce((sum, place) => sum + (place.latitude as number), 0) /
+        bucket.length;
+      const lng =
+        bucket.reduce((sum, place) => sum + (place.longitude as number), 0) /
+        bucket.length;
+
+      return {
+        type: bucket.length > 1 ? ('cluster' as const) : ('single' as const),
+        lat,
+        lng,
+        category: this.getMarkerCategory(bucket[0]),
+        places: bucket,
+      };
+    });
+  }
+
+  private getClusterCellSize(zoom: number): number {
+    if (zoom <= 9) {
+      return 0.12;
+    }
+
+    if (zoom === 10) {
+      return 0.08;
+    }
+
+    if (zoom === 11) {
+      return 0.045;
+    }
+
+    if (zoom === 12) {
+      return 0.025;
+    }
+
+    return 0.015;
   }
 
   private renderNearbyRadiusScan() {

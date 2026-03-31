@@ -23,24 +23,24 @@
         <label class="filter-label">Vai trò</label>
         <select [ngModel]="roleFilter()" (ngModelChange)="roleFilter.set($event); loadData(1)" class="filter-input">
           <option value="">Tất cả</option>
-          <option value="admin">Admin</option>
-          <option value="user">User</option>
-          <option value="owner">Owner</option>
+          <option value="admin">quản trị viên</option>
+          <option value="user">Người dùng</option>
+          <option value="owner">Chủ sở hữu</option>
         </select>
       </div>
       <div class="filter-group">
         <label class="filter-label">Trạng thái</label>
         <select [ngModel]="activeFilter()" (ngModelChange)="activeFilter.set($event === '' ? null : $event === 'true'); loadData(1)" class="filter-input">
           <option value="">Tất cả</option>
-          <option value="true">Active</option>
-          <option value="false">Inactive</option>
+          <option value="true">Hoạt động</option>
+          <option value="false">Không hoạt động</option>
         </select>
       </div>
     </div>
 
     <div class="mb-4 flex flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 lg:flex-row lg:items-end lg:justify-between">
       <div>
-        <p class="text-sm font-semibold text-slate-800">Bulk action</p>
+        <p class="text-sm font-semibold text-slate-800">Hành động hàng loạt</p>
         <p class="text-xs text-slate-500">Đã chọn {{ selectedUserIds().length }} người dùng trên trang hiện tại.</p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
@@ -51,13 +51,13 @@
           <i class="fa-solid fa-user-slash"></i> Vô hiệu
         </button>
         <select [ngModel]="bulkRole()" (ngModelChange)="bulkRole.set($event)" class="filter-input min-w-[120px]">
-          <option value="user">User</option>
-          <option value="owner">Owner</option>
-          <option value="admin">Admin</option>
+          <option value="user">Người dùng</option>
+          <option value="owner">Chủ sở hữu</option>
+          <option value="admin">Quản trị viên</option>
         </select>
         <button (click)="applyBulkRole()" [disabled]="bulkLoading() || !selectedUserIds().length" class="btn-primary">
           <i [class]="bulkLoading() ? 'fa-solid fa-spinner animate-spin' : 'fa-solid fa-shield-halved'"></i>
-          Đổi role
+          Đổi vai trò
         </button>
       </div>
     </div>
@@ -90,7 +90,7 @@
                 <div class="min-w-0">
                   <p class="truncate text-sm font-semibold text-slate-800">{{ user.name }}</p>
                   <p *ngIf="user.username" class="text-xs text-slate-400">@{{ user.username }}</p>
-                  <p *ngIf="user.last_login_at" class="text-xs text-slate-400">Login: {{ user.last_login_at | date:'dd/MM/yyyy HH:mm' }}</p>
+                  <p *ngIf="user.last_login_at" class="text-xs text-slate-400">Đăng nhập: {{ user.last_login_at | date:'dd/MM/yyyy HH:mm' }}</p>
                 </div>
               </div>
             </td>
@@ -100,16 +100,16 @@
             </td>
             <td>
               <span class="role-badge" [class]="user.role === 'admin' ? 'role-admin' : user.role === 'owner' ? 'role-owner' : 'role-user'">
-                {{ user.role || 'user' }}
+                {{ user.role || 'Người dùng' }}
               </span>
             </td>
             <td>
               <span class="status-dot" [class]="user.is_active ? 'active' : 'inactive'"></span>
-              {{ user.is_active ? 'Active' : 'Inactive' }}
+              {{ user.is_active ? 'Hoạt động' : 'Không hoạt động' }}
             </td>
             <td>
               <span class="verify-badge" [class.verify-badge--ok]="user.email_verified_at" [class.verify-badge--pending]="!user.email_verified_at">
-                {{ user.email_verified_at ? 'Verified' : 'Pending' }}
+                {{ user.email_verified_at ? 'Đã xác minh' : 'Đang chờ' }}
               </span>
             </td>
             <td class="text-sm font-semibold text-slate-700">{{ user.points }}</td>
@@ -141,33 +141,45 @@
         <h3 class="text-lg font-bold text-slate-900">{{ editingUser() ? 'Chỉnh sửa' : 'Thêm người dùng' }}</h3>
         <button (click)="closeModal()" class="action-btn"><i class="fa-solid fa-xmark"></i></button>
       </div>
+
+      <!-- General Error Alert -->
+      <div *ngIf="generalError()" class="mb-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-600">
+        <div class="flex gap-2">
+          <i class="fa-solid fa-circle-exclamation mt-0.5"></i>
+          <span>{{ generalError() }}</span>
+        </div>
+      </div>
+
       <div class="space-y-4">
         <div class="filter-group">
           <label class="filter-label">Họ tên *</label>
-          <input type="text" [ngModel]="formName()" (ngModelChange)="formName.set($event)" class="filter-input" />
+          <input type="text" [ngModel]="formName()" (ngModelChange)="formName.set($event)" class="filter-input" [class.border-red-500]="formErrors()['name']" />
+          <p *ngIf="formErrors()['name']" class="mt-1 text-xs text-red-500">{{ formErrors()['name'][0] }}</p>
         </div>
         <div class="filter-group">
           <label class="filter-label">Email *</label>
-          <input type="email" [ngModel]="formEmail()" (ngModelChange)="formEmail.set($event)" class="filter-input" />
+          <input type="email" [ngModel]="formEmail()" (ngModelChange)="formEmail.set($event)" class="filter-input" [class.border-red-500]="formErrors()['email']" />
+          <p *ngIf="formErrors()['email']" class="mt-1 text-xs text-red-500">{{ formErrors()['email'][0] }}</p>
         </div>
         <div class="filter-group">
           <label class="filter-label">Mật khẩu {{ editingUser() ? '(để trống nếu không đổi)' : '*' }}</label>
-          <input type="password" [ngModel]="formPassword()" (ngModelChange)="formPassword.set($event)" class="filter-input" />
+          <input type="password" [ngModel]="formPassword()" (ngModelChange)="formPassword.set($event)" class="filter-input" [class.border-red-500]="formErrors()['password']" />
+          <p *ngIf="formErrors()['password']" class="mt-1 text-xs text-red-500">{{ formErrors()['password'][0] }}</p>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div class="filter-group">
             <label class="filter-label">Vai trò</label>
             <select [ngModel]="formRole()" (ngModelChange)="formRole.set($event)" class="filter-input">
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
-              <option value="owner">Owner</option>
+              <option value="user">Người dùng</option>
+              <option value="admin">Quản trị viên</option>
+              <option value="owner">Chủ sở hữu</option>
             </select>
           </div>
           <div class="filter-group">
             <label class="filter-label">Trạng thái</label>
             <select [ngModel]="formActive()" (ngModelChange)="formActive.set($event === 'true' || $event === true)" class="filter-input">
-              <option [ngValue]="true">Active</option>
-              <option [ngValue]="false">Inactive</option>
+              <option [ngValue]="true">Hoạt động</option>
+              <option [ngValue]="false">Không hoạt động</option>
             </select>
           </div>
         </div>

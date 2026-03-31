@@ -23,7 +23,7 @@
 
   <!-- Generate Form -->
   <section *ngIf="showGenerateForm()" class="mt-6 card">
-    <h3 class="mb-4 text-sm font-bold text-slate-800">🤖 Tạo lịch trình bằng
+    <h3 class="mb-4 text-sm font-bold text-slate-800">Tạo lịch trình bằng
       AI</h3>
     <p *ngIf="generateError()"
       class="mb-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">{{
@@ -189,21 +189,21 @@
           <div *ngIf="expandedId() === it.id"
             class="mt-3 rounded-xl bg-slate-50 p-4">
             <div class="grid gap-3 sm:grid-cols-3 mb-3">
-              <div><span class="detail-label">Budget</span><span
+              <div><span class="detail-label">Ngân sách</span><span
                   class="detail-value">{{ it.budget || 'N/A' }}</span></div>
-              <div><span class="detail-label">Travel mode</span><span
+              <div><span class="detail-label">Mô hình di lịch</span><span
                   class="detail-value">{{ it.travel_mode || 'N/A'
                   }}</span></div>
-              <div><span class="detail-label">Total km</span><span
+              <div><span class="detail-label">Tổng km</span><span
                   class="detail-value">{{ it.overview?.total_travel_distance_km
                   || 'N/A' }}</span></div>
             </div>
             <div class="mb-3 grid gap-3 sm:grid-cols-3">
-              <div><span class="detail-label">Companion</span><span
+              <div><span class="detail-label">Bạn đồng hành</span><span
                   class="detail-value">{{ it.preferences.companion_type || 'N/A' }}</span></div>
-              <div><span class="detail-label">Trip style</span><span
+              <div><span class="detail-label">Phong cách du lịch</span><span
                   class="detail-value">{{ it.preferences.trip_style || 'N/A' }}</span></div>
-              <div><span class="detail-label">Energy</span><span
+              <div><span class="detail-label">Năng lượng</span><span
                   class="detail-value">{{ it.preferences.energy_level || 'N/A' }}</span></div>
             </div>
             <div *ngFor="let day of it.day_summaries" class="mb-2">

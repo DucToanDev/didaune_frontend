@@ -5,7 +5,10 @@
       <i class="fa-solid fa-sparkles"></i> {{ showGenerateForm() ? 'Ẩn form' :
       'Tạo mới' }}
     </button>
-    <button (click)="loadData(1)" class="btn-outline">
+    <button (click)="loadData()" class="btn-outline">
+      <i class="fa-solid fa-cloud-arrow-down"></i> Đồng bộ API
+    </button>
+    <button (click)="loadData()" class="btn-outline">
       <i
         [class]="loading() ? 'fa-solid fa-spinner animate-spin' : 'fa-solid fa-arrows-rotate'"></i>
       Làm mới
@@ -87,12 +90,55 @@
     <div class="card">
       <div class="card-head">
         <h2 class="card-title">Danh sách</h2>
-        <span class="text-xs text-slate-400">{{ pagination().from }}–{{
-          pagination().to }} / {{ pagination().total }}</span>
+        <span class="text-xs text-slate-400">{{ pageSummary().from }}–{{
+          pageSummary().to }} / {{ pageSummary().total }}</span>
+      </div>
+
+      <div class="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="filter-group">
+          <label class="filter-label">Tìm kiếm</label>
+          <input
+            type="text"
+            [ngModel]="search()"
+            (ngModelChange)="search.set($event); applyFilters()"
+            placeholder="Tên lịch trình, thành phố, model..."
+            class="filter-input" />
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Thành phố</label>
+          <select
+            [ngModel]="cityFilter()"
+            (ngModelChange)="cityFilter.set($event); applyFilters()"
+            class="filter-input">
+            <option value="all">Tất cả</option>
+            <option *ngFor="let city of cityOptions()" [value]="city">{{ city }}</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">AI Model</label>
+          <select
+            [ngModel]="modelFilter()"
+            (ngModelChange)="modelFilter.set($event); applyFilters()"
+            class="filter-input">
+            <option value="all">Tất cả</option>
+            <option *ngFor="let model of modelOptions()" [value]="model">{{ model }}</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Nguồn tạo</label>
+          <select
+            [ngModel]="sourceFilter()"
+            (ngModelChange)="sourceFilter.set($event); applyFilters()"
+            class="filter-input">
+            <option value="all">Tất cả</option>
+            <option value="ai">AI</option>
+            <option value="manual">Manual</option>
+          </select>
+        </div>
       </div>
 
       <div class="space-y-2">
-        <div *ngFor="let it of itineraries()" class="it-row"
+        <div *ngFor="let it of pagedItineraries()" class="it-row"
           (click)="toggleExpand(it.id)">
           <div class="flex items-center gap-3">
             <div
@@ -106,8 +152,33 @@
                 • {{ it.days }} ngày • {{ it.items.length }} điểm • {{
                 it.ai_model || 'N/A' }}</p>
             </div>
+            <span
+              class="status-chip"
+              [class.status-chip--ai]="(it.itinerary_type || 'manual') === 'ai'">
+              {{ (it.itinerary_type || 'manual') === 'ai' ? 'AI' : 'Manual' }}
+            </span>
             <span class="shrink-0 text-[11px] text-slate-400">{{ it.created_at |
               date:'dd/MM/yy' }}</span>
+            <a
+              [routerLink]="['/planner', it.id, 'edit']"
+              (click)="$event.stopPropagation()"
+              class="action-btn"
+              title="Sửa">
+              <i class="fa-solid fa-pen"></i>
+            </a>
+            <button
+              (click)="duplicateItinerary(it); $event.stopPropagation()"
+              class="action-btn"
+              [disabled]="duplicateLoadingId() === it.id"
+              title="Nhân bản">
+              <i [class]="duplicateLoadingId() === it.id ? 'fa-solid fa-spinner animate-spin' : 'fa-regular fa-copy'"></i>
+            </button>
+            <button
+              (click)="exportItinerary(it); $event.stopPropagation()"
+              class="action-btn"
+              title="Export JSON">
+              <i class="fa-solid fa-file-export"></i>
+            </button>
             <button (click)="deleteItinerary(it.id); $event.stopPropagation()"
               class="action-btn danger" title="Xóa">
               <i class="fa-solid fa-trash-can"></i>
@@ -127,6 +198,14 @@
                   class="detail-value">{{ it.overview?.total_travel_distance_km
                   || 'N/A' }}</span></div>
             </div>
+            <div class="mb-3 grid gap-3 sm:grid-cols-3">
+              <div><span class="detail-label">Companion</span><span
+                  class="detail-value">{{ it.preferences.companion_type || 'N/A' }}</span></div>
+              <div><span class="detail-label">Trip style</span><span
+                  class="detail-value">{{ it.preferences.trip_style || 'N/A' }}</span></div>
+              <div><span class="detail-label">Energy</span><span
+                  class="detail-value">{{ it.preferences.energy_level || 'N/A' }}</span></div>
+            </div>
             <div *ngFor="let day of it.day_summaries" class="mb-2">
               <p class="text-xs font-bold text-slate-600 mb-1">Ngày {{
                 day.day_number }}: {{ day.theme || 'Không rõ' }}</p>
@@ -144,18 +223,21 @@
               }}</p>
           </div>
         </div>
+        <p *ngIf="!loading() && !pagedItineraries().length" class="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-400">
+          Chưa có lịch trình nào khớp bộ lọc hiện tại.
+        </p>
       </div>
 
       <!-- Pagination -->
       <div class="mt-4 flex items-center justify-between">
-        <p class="text-xs text-slate-400">Trang {{ pagination().current_page }}
-          / {{ pagination().last_page }}</p>
+        <p class="text-xs text-slate-400">Trang {{ currentPage() }}
+          / {{ totalPages() }}</p>
         <div class="flex gap-1">
-          <button (click)="goToPage(pagination().current_page - 1)"
-            [disabled]="pagination().current_page <= 1" class="page-btn"><i
+          <button (click)="goToPage(currentPage() - 1)"
+            [disabled]="currentPage() <= 1" class="page-btn"><i
               class="fa-solid fa-chevron-left"></i></button>
-          <button (click)="goToPage(pagination().current_page + 1)"
-            [disabled]="pagination().current_page >= pagination().last_page"
+          <button (click)="goToPage(currentPage() + 1)"
+            [disabled]="currentPage() >= totalPages()"
             class="page-btn"><i class="fa-solid fa-chevron-right"></i></button>
         </div>
       </div>

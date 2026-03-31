@@ -25,11 +25,29 @@ const requireAuth = () => {
   return router.createUrlTree(['/']);
 };
 
+const requireAdmin = () => {
+  const dataService = inject(DataService);
+  const router = inject(Router);
+
+  if (!dataService.isAuthenticated()) {
+    dataService.setPostLoginRedirect('/admin');
+    dataService.requestAuthModal('login');
+    return router.createUrlTree(['/']);
+  }
+
+  if (dataService.hasAdminRole()) {
+    return true;
+  }
+
+  return router.createUrlTree(['/']);
+};
+
 export const routes: Routes = [
   {
     path: 'admin',
     loadChildren: () =>
       import('./admin/admin.routes').then((m) => m.adminRoutes),
+    canActivate: [requireAdmin],
   },
   {
     path: '',

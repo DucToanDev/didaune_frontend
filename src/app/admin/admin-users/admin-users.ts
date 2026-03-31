@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { finalize, forkJoin } from 'rxjs';
 import { PaginationMeta } from '../../core/models/app.models';
 import { AdminUser, UserApiService } from '../../core/services/user-api.service';
 import { AdminHeader } from '../shared/admin-header/admin-header';
@@ -25,6 +25,9 @@ export class AdminUsers implements OnInit {
   search = signal('');
   roleFilter = signal('');
   activeFilter = signal<boolean | null>(null);
+  selectedUserIds = signal<number[]>([]);
+  bulkRole = signal('user');
+  bulkLoading = signal(false);
 
   // Create/Edit modal
   showModal = signal(false);
@@ -54,6 +57,7 @@ export class AdminUsers implements OnInit {
       .subscribe((result) => {
         this.users.set(result.data);
         this.pagination.set(result.meta);
+        this.selectedUserIds.set([]);
       });
   }
 
@@ -133,6 +137,58 @@ export class AdminUsers implements OnInit {
     if (!confirm(`Xóa người dùng "${user.name}"?`)) return;
     this.userApi.deleteUser(user.id).subscribe(() => {
       this.users.update((list) => list.filter((u) => u.id !== user.id));
+      this.selectedUserIds.update((list) => list.filter((id) => id !== user.id));
     });
+  }
+
+  isSelected(userId: number) {
+    return this.selectedUserIds().includes(userId);
+  }
+
+  allSelectedOnPage() {
+    return this.users().length > 0 && this.users().every((user) => this.isSelected(user.id));
+  }
+
+  toggleSelection(userId: number, checked: boolean) {
+    this.selectedUserIds.update((selected) => {
+      if (checked) {
+        return [...new Set([...selected, userId])];
+      }
+
+      return selected.filter((id) => id !== userId);
+    });
+  }
+
+  toggleSelectPage(checked: boolean) {
+    if (checked) {
+      this.selectedUserIds.set(this.users().map((user) => user.id));
+      return;
+    }
+
+    this.selectedUserIds.set([]);
+  }
+
+  applyBulkActive(isActive: boolean) {
+    const ids = this.selectedUserIds();
+    if (!ids.length) return;
+
+    this.bulkLoading.set(true);
+    forkJoin(ids.map((id) => this.userApi.updateUser(id, { is_active: isActive })))
+      .pipe(finalize(() => this.bulkLoading.set(false)))
+      .subscribe(() => {
+        this.loadData(this.pagination().current_page);
+      });
+  }
+
+  applyBulkRole() {
+    const ids = this.selectedUserIds();
+    if (!ids.length) return;
+
+    this.bulkLoading.set(true);
+    forkJoin(ids.map((id) => this.userApi.updateUser(id, { role: this.bulkRole() })))
+      .pipe(finalize(() => this.bulkLoading.set(false)))
+      .subscribe(() => {
+        this.loadData(this.pagination().current_page);
+      });
   }
 }

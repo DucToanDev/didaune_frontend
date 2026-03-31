@@ -12,11 +12,19 @@ import {
 import { DataService } from '../../core/services/data.service';
 import { Router, RouterModule } from '@angular/router';
 import { DragScrollDirective } from '../../shared/ui/drag-scroll.directive';
+import { calculateDistanceKm } from '../../core/utils/geo.utils';
+import { getSuggestedHours } from '../../core/utils/place-display.utils';
+import { PlaceGridCardComponent } from '../../shared/ui/place-grid-card/place-grid-card';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, DragScrollDirective],
+  imports: [
+    CommonModule,
+    RouterModule,
+    DragScrollDirective,
+    PlaceGridCardComponent,
+  ],
   templateUrl: './home.html',
   styleUrl: './home.css',
 })
@@ -28,6 +36,7 @@ export class Home implements OnInit {
   trendingPlaces = signal<Place[]>([]);
   newPlaces = signal<Place[]>([]);
   nearbyPlaces = signal<Place[]>([]);
+  allPlaces = signal<Place[]>([]);
   recentViewedPlaces = signal<Place[]>([]);
   categories = signal<Category[]>([]);
   cities = signal<City[]>([]);
@@ -55,30 +64,36 @@ export class Home implements OnInit {
       return this.wards();
     }
 
-    return this.wards().filter((ward) => ward.name.toLowerCase().includes(query));
+    return this.wards().filter((ward) =>
+      ward.name.toLowerCase().includes(query),
+    );
   });
 
   homeCategoryOptions = computed(() =>
     this.categories().filter((category) =>
-      ['cafe', 'hotel', 'homestay', 'restaurant', 'travel'].includes(category.id)
-    )
+      ['cafe', 'hotel', 'homestay', 'restaurant', 'travel'].includes(
+        category.id,
+      ),
+    ),
   );
 
   collapsedQuickMenuOptions = computed(() => {
     const selectedId = this.selectedHomeCategory();
-    return this.homeCategoryOptions().filter((category) => category.id !== selectedId);
+    return this.homeCategoryOptions().filter(
+      (category) => category.id !== selectedId,
+    );
   });
 
   filteredFeaturedPlaces = computed(() =>
-    this.filterPlacesByHomeCategory(this.featuredPlaces())
+    this.filterPlacesByHomeCategory(this.featuredPlaces()),
   );
 
   filteredTrendingPlaces = computed(() =>
-    this.filterPlacesByHomeCategory(this.trendingPlaces())
+    this.filterPlacesByHomeCategory(this.trendingPlaces()),
   );
 
   filteredNearbyPlaces = computed(() =>
-    this.filterPlacesByHomeCategory(this.nearbyPlaces())
+    this.filterPlacesByHomeCategory(this.nearbyPlaces()),
   );
 
   marqueeCategories = computed(() => {
@@ -96,7 +111,9 @@ export class Home implements OnInit {
       this.uniquePlacesById([
         ...this.filteredFeaturedPlaces().filter((place) => place.rating >= 4),
         ...this.filteredTrendingPlaces().filter((place) => place.rating >= 4),
-        ...this.filterPlacesByHomeCategory(this.newPlaces()).filter((place) => place.rating >= 4),
+        ...this.filterPlacesByHomeCategory(this.newPlaces()).filter(
+          (place) => place.rating >= 4,
+        ),
         ...this.filteredNearbyPlaces().filter((place) => place.rating >= 4),
         ...this.filteredFeaturedPlaces(),
         ...this.filteredTrendingPlaces(),
@@ -105,7 +122,9 @@ export class Home implements OnInit {
   );
 
   displayLocationLabel = computed(() => {
-    const city = this.cities().find((item) => item.id === this.dataService.currentCityId());
+    const city = this.cities().find(
+      (item) => item.id === this.dataService.currentCityId(),
+    );
     return city?.name ?? 'Ho Chi Minh';
   });
 
@@ -116,12 +135,20 @@ export class Home implements OnInit {
 
   activeHomeCategory = computed(() => {
     const selectedId = this.selectedHomeCategory();
-    return this.homeCategoryOptions().find((category) => category.id === selectedId) ?? null;
+    return (
+      this.homeCategoryOptions().find(
+        (category) => category.id === selectedId,
+      ) ?? null
+    );
   });
 
-  activeHomeCategoryLabel = computed(() => this.activeHomeCategory()?.name ?? 'Ca phe');
+  activeHomeCategoryLabel = computed(
+    () => this.activeHomeCategory()?.name ?? 'Ca phe',
+  );
 
-  activeHomeCategoryIcon = computed(() => this.activeHomeCategory()?.icon ?? 'fa-mug-hot');
+  activeHomeCategoryIcon = computed(
+    () => this.activeHomeCategory()?.icon ?? 'fa-mug-hot',
+  );
 
   ngOnInit() {
     this.loadData();
@@ -131,17 +158,34 @@ export class Home implements OnInit {
     this.loading.set(true);
 
     this.dataService.getCities().subscribe((data) => this.cities.set(data));
-    this.dataService.getCategories().subscribe((data) => this.categories.set(data));
+    this.dataService
+      .getCategories()
+      .subscribe((data) => this.categories.set(data));
     this.dataService
       .getRecentlyViewedPlaces()
       .subscribe((places) => this.recentViewedPlaces.set(places));
-    this.dataService.getWardsByCityId(this.dataService.currentCityId()).subscribe((data) => {
-      this.wards.set(data);
-      const selectedWard = data.find(
-        (ward) => String(ward.code) === this.dataService.currentWardCode(),
-      );
-      this.wardQuery.set(selectedWard?.name ?? this.dataService.currentWardName());
+    this.dataService.getPlaces().subscribe((places) => {
+      this.allPlaces.set(places);
+      if (this.demandCategories().length) {
+        this.demandCategories.update((categories) =>
+          categories.map((category) => ({
+            ...category,
+            count: this.getDemandCategoryCount(category),
+          })),
+        );
+      }
     });
+    this.dataService
+      .getWardsByCityId(this.dataService.currentCityId())
+      .subscribe((data) => {
+        this.wards.set(data);
+        const selectedWard = data.find(
+          (ward) => String(ward.code) === this.dataService.currentWardCode(),
+        );
+        this.wardQuery.set(
+          selectedWard?.name ?? this.dataService.currentWardName(),
+        );
+      });
 
     this.dataService.getHomeData().subscribe((data) => {
       this.hero.set(data.hero);
@@ -153,6 +197,7 @@ export class Home implements OnInit {
         data.demand_categories.map((category) => ({
           ...category,
           name: this.getDemandCategoryDisplayName(category.name, category.id),
+          count: this.getDemandCategoryCount(category),
         })),
       );
       this.topCategories.set(data.top_categories);
@@ -171,7 +216,9 @@ export class Home implements OnInit {
     this.wardQuery.set('');
     this.wardDropdownOpen.set(false);
 
-    this.dataService.getWardsByCityId(cityId).subscribe((data) => this.wards.set(data));
+    this.dataService
+      .getWardsByCityId(cityId)
+      .subscribe((data) => this.wards.set(data));
   }
 
   onWardInput(event: Event) {
@@ -190,7 +237,9 @@ export class Home implements OnInit {
       (ward) => ward.name.toLowerCase() === value.toLowerCase(),
     );
 
-    this.dataService.currentWardCode.set(matchedWard ? String(matchedWard.code) : '');
+    this.dataService.currentWardCode.set(
+      matchedWard ? String(matchedWard.code) : '',
+    );
     this.dataService.currentWardName.set(matchedWard ? matchedWard.name : '');
   }
 
@@ -240,10 +289,13 @@ export class Home implements OnInit {
     this.router.navigate(['/discover']);
   }
 
-  onCategoryClick(categoryName: string) {
-    this.dataService.selectedCategoryId.set('all');
-    this.dataService.searchQuery.set(categoryName);
-    this.router.navigate(['/discover']);
+  onCategoryClick(category: HomeCategorySummary) {
+    const { categoryId, amenityId, searchQuery } =
+      this.resolveDemandCategoryFilters(category);
+
+    this.dataService.selectedCategoryId.set(categoryId);
+    this.dataService.selectedAmenityId.set(amenityId);
+    this.dataService.searchQuery.set(searchQuery);
   }
 
   private filterPlacesByHomeCategory(places: Place[]): Place[] {
@@ -256,7 +308,10 @@ export class Home implements OnInit {
 
     for (let index = shuffled.length - 1; index > 0; index -= 1) {
       const swapIndex = Math.floor(Math.random() * (index + 1));
-      [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+      [shuffled[index], shuffled[swapIndex]] = [
+        shuffled[swapIndex],
+        shuffled[index],
+      ];
     }
 
     return shuffled;
@@ -273,6 +328,135 @@ export class Home implements OnInit {
       seen.add(place.id);
       return true;
     });
+  }
+
+  private resolveDemandCategoryFilters(category: HomeCategorySummary): {
+    categoryId: string;
+    amenityId: string;
+    searchQuery: string;
+  } {
+    const normalize = (value: string) =>
+      value
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
+
+    const directId = category.id?.trim();
+    if (directId) {
+      return {
+        categoryId: directId,
+        amenityId: 'all',
+        searchQuery: '',
+      };
+    }
+
+    const normalizedName = normalize(category.name);
+    const matchedCategory = this.categories().find((item) => {
+      const normalizedCategoryName = normalize(item.name);
+      if (normalizedCategoryName === normalizedName) {
+        return true;
+      }
+
+      if (normalizedName.includes(normalize(item.id))) {
+        return true;
+      }
+
+      if (item.id === 'cafe') {
+        return (
+          normalizedName.includes('ca phe') ||
+          normalizedName.includes('quan cafe') ||
+          normalizedName.includes('quan ca phe')
+        );
+      }
+
+      if (item.id === 'restaurant') {
+        return (
+          normalizedName.includes('nha hang') ||
+          normalizedName.includes('an uong')
+        );
+      }
+
+      if (item.id === 'date') {
+        return normalizedName.includes('hen ho');
+      }
+
+      if (item.id === 'group') {
+        return normalizedName.includes('tu tap');
+      }
+
+      if (item.id === 'photo') {
+        return (
+          normalizedName.includes('song ao') ||
+          normalizedName.includes('view dep')
+        );
+      }
+
+      if (item.id === 'hotel') {
+        return normalizedName.includes('khach san');
+      }
+
+      if (item.id === 'work') {
+        return normalizedName.includes('lam viec');
+      }
+
+      return false;
+    });
+
+    if (matchedCategory) {
+      return {
+        categoryId: matchedCategory.id,
+        amenityId: 'all',
+        searchQuery: '',
+      };
+    }
+
+    if (normalizedName.includes('yen tinh')) {
+      return {
+        categoryId: 'all',
+        amenityId: 'quiet',
+        searchQuery: '',
+      };
+    }
+
+    return {
+      categoryId: 'all',
+      amenityId: 'all',
+      searchQuery: category.name,
+    };
+  }
+
+  private getDemandCategoryCount(category: HomeCategorySummary): number {
+    const { categoryId, amenityId, searchQuery } =
+      this.resolveDemandCategoryFilters(category);
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+
+    return this.allPlaces().filter((place) => {
+      if (categoryId !== 'all' && !place.categories.includes(categoryId)) {
+        return false;
+      }
+
+      if (amenityId !== 'all' && !place.amenities.includes(amenityId)) {
+        return false;
+      }
+
+      if (!normalizedSearch) {
+        return true;
+      }
+
+      const searchTarget = [
+        place.name,
+        place.address,
+        place.district_name,
+        place.city_name,
+        ...place.category_labels,
+        ...place.amenity_labels,
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      return searchTarget.includes(normalizedSearch);
+    }).length;
   }
 
   getCategoryIcon(categoryName: string): string {
@@ -298,7 +482,11 @@ export class Home implements OnInit {
       return 'fa-cake-candles';
     }
 
-    if (normalized.includes('check') || normalized.includes('anh') || normalized.includes('art')) {
+    if (
+      normalized.includes('check') ||
+      normalized.includes('anh') ||
+      normalized.includes('art')
+    ) {
       return 'fa-camera-retro';
     }
 
@@ -324,20 +512,12 @@ export class Home implements OnInit {
     this.router.navigate(['/discover']);
   }
 
-  toggleFavorite(event: Event, slug: string) {
-    event.preventDefault();
-    event.stopPropagation();
+  toggleFavorite(slug: string) {
     this.dataService.toggleFavorite(slug);
   }
 
   getSuggestedHours(place: Place): string {
-    const firstHour = place.hours.find((hour) => hour.times.length > 0);
-
-    if (!firstHour) {
-      return 'Chưa cập nhật';
-    }
-
-    return firstHour.times[0] ?? 'Chưa cập nhật';
+    return getSuggestedHours(place);
   }
 
   formatDistanceKm(place: Place): string {
@@ -355,7 +535,10 @@ export class Home implements OnInit {
   }
 
   private resolveDistanceKm(place: Place): number | null {
-    if (typeof place.distance_km === 'number' && !Number.isNaN(place.distance_km)) {
+    if (
+      typeof place.distance_km === 'number' &&
+      !Number.isNaN(place.distance_km)
+    ) {
       return place.distance_km;
     }
 
@@ -371,36 +554,12 @@ export class Home implements OnInit {
       return null;
     }
 
-    return this.calculateDistanceKm(
+    return calculateDistanceKm(
       coordinates.lat,
       coordinates.lng,
       place.latitude,
       place.longitude,
     );
-  }
-
-  private calculateDistanceKm(
-    fromLat: number,
-    fromLng: number,
-    toLat: number,
-    toLng: number,
-  ): number {
-    const earthRadiusKm = 6371;
-    const dLat = this.toRadians(toLat - fromLat);
-    const dLng = this.toRadians(toLng - fromLng);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRadians(fromLat)) *
-      Math.cos(this.toRadians(toLat)) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return earthRadiusKm * c;
-  }
-
-  private toRadians(value: number): number {
-    return (value * Math.PI) / 180;
   }
 
   private getDemandCategoryDisplayName(name: string, id?: string): string {
@@ -457,15 +616,12 @@ function displayCityLabel(cityName: string): string {
     return 'TP. Hồ Chí Minh';
   }
 
-  if (cityName.toLowerCase().includes('ha noi') || cityName.toLowerCase().includes('ha-noi')) {
+  if (
+    cityName.toLowerCase().includes('ha noi') ||
+    cityName.toLowerCase().includes('ha-noi')
+  ) {
     return 'TP. Hà Nội';
   }
 
   return cityName;
 }
-
-
-
-
-
-

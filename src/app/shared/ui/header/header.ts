@@ -359,6 +359,7 @@ export class Header implements OnInit {
 
     request$.pipe(finalize(() => this.authSubmitting.set(false))).subscribe({
       next: () => {
+        this.dataService.resumePendingAuthAction();
         this.authModalOpen.set(false);
       },
       error: (error) => {
@@ -628,6 +629,7 @@ export class Header implements OnInit {
   ) {
     request$.pipe(finalize(() => this.authSubmitting.set(false))).subscribe({
       next: () => {
+        this.dataService.resumePendingAuthAction();
         this.authModalOpen.set(false);
       },
       error: (error) => {

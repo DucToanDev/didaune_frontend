@@ -13,6 +13,7 @@ import { DataService } from '../../core/services/data.service';
   styleUrl: './reviews.css',
 })
 export class Reviews {
+  private readonly reviewDraftStoragePrefix = 'didaune-review-draft-';
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   public dataService = inject(DataService);
@@ -39,6 +40,7 @@ export class Reviews {
         return;
       }
 
+      this.restoreDraft(slug);
       this.dataService.getPlaceBySlug(slug).subscribe((place) => this.place.set(place));
     });
   }
@@ -64,6 +66,15 @@ export class Reviews {
 
     const content = [this.comment().trim(), ...this.selectedTags()].filter(Boolean).join(' | ');
 
+    if (!this.dataService.isAuthenticated()) {
+      this.persistDraft(place.slug);
+      this.dataService.requestAuthForAction({
+        type: 'review',
+        placeSlug: place.slug,
+      });
+      return;
+    }
+
     this.dataService.submitReview({
       place_slug: place.slug,
       rating: this.rating(),
@@ -71,6 +82,57 @@ export class Reviews {
       images: [],
     });
 
+    this.clearDraft(place.slug);
     this.router.navigate(['/detail', place.slug]);
+  }
+
+  private persistDraft(placeSlug: string) {
+    if (typeof sessionStorage === 'undefined') {
+      return;
+    }
+
+    sessionStorage.setItem(
+      `${this.reviewDraftStoragePrefix}${placeSlug}`,
+      JSON.stringify({
+        rating: this.rating(),
+        comment: this.comment(),
+        selectedTags: this.selectedTags(),
+      }),
+    );
+  }
+
+  private restoreDraft(placeSlug: string) {
+    if (typeof sessionStorage === 'undefined') {
+      return;
+    }
+
+    const rawValue = sessionStorage.getItem(
+      `${this.reviewDraftStoragePrefix}${placeSlug}`,
+    );
+    if (!rawValue) {
+      return;
+    }
+
+    try {
+      const draft = JSON.parse(rawValue) as {
+        rating?: number;
+        comment?: string;
+        selectedTags?: string[];
+      };
+
+      this.rating.set(draft.rating ?? 5);
+      this.comment.set(draft.comment ?? '');
+      this.selectedTags.set(draft.selectedTags?.length ? draft.selectedTags : []);
+    } catch {
+      this.clearDraft(placeSlug);
+    }
+  }
+
+  private clearDraft(placeSlug: string) {
+    if (typeof sessionStorage === 'undefined') {
+      return;
+    }
+
+    sessionStorage.removeItem(`${this.reviewDraftStoragePrefix}${placeSlug}`);
   }
 }

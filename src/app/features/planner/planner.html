@@ -1,47 +1,44 @@
-<div
-  class="mx-auto max-w-7xl p-4 pb-24 md:pb-10 lg:p-8">
-
+<div class="mx-auto max-w-7xl p-4 pb-24 md:pb-10 lg:p-8">
   <section
     class="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
     <div>
-      <h1 class="mt-2 text-3xl font-black text-slate-800">{{ pageHeading() }}</h1>
+      <h1 class="mt-2 text-3xl font-black text-slate-800">{{ pageHeading()
+        }}</h1>
       <p class="mt-2 max-w-2xl text-sm text-slate-500">
-        Tạo lịch trình nhanh chóng bằng AI.
+        Tạo và chỉnh sửa lịch trình chuyến đi của bạn.
       </p>
     </div>
     <div class="flex items-center gap-2 md:gap-4">
-      <button
-        type="button"
+      <button type="button"
         class="hidden items-center gap-2 rounded-xl bg-white px-4 py-2 font-bold text-sm text-slate-600 shadow-sm transition hover:bg-slate-100 sm:flex">
         <i class="fa-solid fa-eye text-sm"></i>
         <span>Xem trước</span>
       </button>
-      <button
-        type="button"
-        (click)="saveTrip()"
+      <button type="button" (click)="saveTrip()"
         class="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white shadow-md transition hover:bg-orange-600 md:px-8 md:py-2.5">
-        {{ saving() ? 'Dang luu...' : saveLabel() }}
+        {{ saving() ? 'Đang lưu...' : saveLabel() }}
       </button>
     </div>
   </section>
-
-  <!-- Save validation warning -->
-  <div
-    *ngIf="showTitleWarning()"
-    class="undo-toast mb-6 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-medium text-red-600 shadow-sm">
-    <i class="fa-solid fa-circle-exclamation"></i>
-    <span>Vui lòng nhập tên chuyến đi trước khi lưu.</span>
-  </div>
-
   <div class="mx-auto flex max-w-7xl flex-col gap-8 lg:flex-row">
     <div class="flex-1 space-y-6 md:space-y-10">
+      <app-planner-trip-form heading="Thông tin chuyến đi"
+        descriptionHint="Bạn có thể tiếp tục chỉnh sửa thông tin cơ bản, sau đó thêm quán và sắp xếp lịch trình bên dưới."
+        [title]="tripTitle()" [description]="tripDescription()"
+        [coverPreviewUrl]="coverPreviewUrl()"
+        [startDate]="startDate()" [endDate]="endDate()"
+        (titleChange)="tripTitle.set($event)"
+        (descriptionChange)="tripDescription.set($event)"
+        (coverChange)="coverPreviewUrl.set($event)"
+        (startDateChange)="startDate.set($event)"
+        (endDateChange)="endDate.set($event)">
+      </app-planner-trip-form>
+
       <section
-        class="custom-shadow rounded-[32px] border border-white bg-white p-4 md:p-8">
+        class="hidden custom-shadow rounded-[32px] border border-white bg-white p-4 md:p-8">
         <div
           class="group relative mb-6 h-48 w-full cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed border-slate-200 bg-slate-100 transition hover:border-primary md:h-72 md:rounded-[24px]">
-          <img
-            *ngIf="coverPreviewUrl()"
-            [src]="coverPreviewUrl()"
+          <img *ngIf="coverPreviewUrl()" [src]="coverPreviewUrl()"
             class="absolute inset-0 h-full w-full object-cover" />
           <div
             class="absolute inset-0 flex flex-col items-center justify-center text-slate-400"
@@ -50,33 +47,23 @@
             <span class="text-xs font-medium md:text-sm">Thêm ảnh bìa cho chuyến
               đi</span>
           </div>
-          <input
-            type="file"
-            class="absolute inset-0 cursor-pointer opacity-0"
+          <input type="file" class="absolute inset-0 cursor-pointer opacity-0"
             (change)="onCoverSelected($event)" />
         </div>
 
         <div class="space-y-4">
-          <input
-            type="text"
-            [ngModel]="tripTitle()"
+          <input type="text" [ngModel]="tripTitle()"
             (ngModelChange)="tripTitle.set($event)"
             placeholder="Tên chuyến đi của bạn..."
-            class="w-full bg-transparent text-xl font-black text-slate-800 outline-none placeholder:text-slate-200 md:text-2xl"
-            [class.ring-2]="showTitleWarning()"
-            [class.ring-red-400]="showTitleWarning()"
-            [class.rounded-lg]="showTitleWarning()" />
-          <textarea
-            [ngModel]="tripDescription()"
+            class="w-full bg-transparent text-xl font-black text-slate-800 outline-none placeholder:text-slate-200 md:text-2xl" />
+          <textarea [ngModel]="tripDescription()"
             (ngModelChange)="tripDescription.set($event)"
             placeholder="Viết mô tả ngắn gọn về chuyến đi này"
             class="min-h-[60px] w-full resize-none bg-transparent text-sm text-slate-500 outline-none md:text-lg"
             rows="2"></textarea>
 
           <div class="flex flex-col gap-3 sm:flex-row">
-            <button
-              type="button"
-              (click)="openDatePicker()"
+            <button type="button" (click)="openDatePicker()"
               class="planner-date-trigger flex flex-1 items-center gap-3 rounded-2xl bg-slate-50 p-3 text-left transition hover:bg-slate-100">
               <span
                 class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -84,26 +71,22 @@
               </span>
               <div class="min-w-0 flex-1">
                 <span
-                  class="mb-0.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Ngay
-                  di</span>
+                  class="mb-0.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Ngày
+                  đi</span>
                 <span class="block truncate text-sm font-bold text-slate-700">{{
                   dateRangeLabel() }}</span>
               </div>
               <i class="fa-solid fa-chevron-down text-xs text-slate-400"></i>
             </button>
-            <div
-              *ngIf="tripDays() > 0"
+            <div *ngIf="tripDays() > 0"
               class="flex items-center justify-center gap-2 rounded-2xl bg-primary/10 px-4 py-3">
               <i class="fa-solid fa-moon text-sm text-primary"></i>
               <span class="text-sm font-black text-primary">{{ tripDays() }}
-                ngay</span>
+                ngày</span>
             </div>
           </div>
-          <input
-            #dateRangeInput
-            type="text"
-            class="planner-date-input sr-only"
-            aria-label="Chon khoang ngay" />
+          <input #dateRangeInput type="text" class="planner-date-input sr-only"
+            aria-label="Chọn khoảng ngày" />
 
           <!-- Date Picker -->
           <div class="hidden flex-col gap-3 sm:flex-row">
@@ -114,9 +97,7 @@
                 <label
                   class="mb-0.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Ngày
                   bắt đầu</label>
-                <input
-                  type="date"
-                  [ngModel]="startDate()"
+                <input type="date" [ngModel]="startDate()"
                   (ngModelChange)="startDate.set($event)"
                   class="w-full bg-transparent text-xs font-bold text-slate-700 outline-none" />
               </div>
@@ -128,15 +109,12 @@
                 <label
                   class="mb-0.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Ngày
                   kết thúc</label>
-                <input
-                  type="date"
-                  [ngModel]="endDate()"
+                <input type="date" [ngModel]="endDate()"
                   (ngModelChange)="endDate.set($event)"
                   class="w-full bg-transparent text-xs font-bold text-slate-700 outline-none" />
               </div>
             </div>
-            <div
-              *ngIf="tripDays() > 0"
+            <div *ngIf="tripDays() > 0"
               class="flex items-center justify-center gap-2 rounded-xl bg-primary/10 px-4 py-3">
               <i class="fa-solid fa-moon text-sm text-primary"></i>
               <span class="text-sm font-black text-primary">{{ tripDays() }}
@@ -153,19 +131,17 @@
         <div class="space-y-4">
           <ng-container
             *ngFor="let stop of stops(); let index = index; let last = last">
-            <div
-              *ngIf="shouldShowDayHeading(index)"
+            <div *ngIf="shouldShowDayHeading(index)"
               class="ml-14 flex w-[calc(100%-3.5rem)] items-center justify-between px-1 md:ml-20 md:w-[calc(100%-5rem)]">
               <div>
                 <h4 class="text-lg font-black text-slate-800">{{
                   getDayLabel(stop.dayNumber) }}</h4>
-                <p class="text-xs text-slate-400">Sap xep cac diem dung trong
-                  ngay nay</p>
+                <p class="text-xs text-slate-400">Sắp xếp các điểm dừng trong
+                  ngày này</p>
               </div>
             </div>
 
-            <div
-              *ngIf="shouldShowTravelBlock(index)"
+            <div *ngIf="shouldShowTravelBlock(index)"
               class="ml-14 flex w-[calc(100%-3.5rem)] items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-xs text-slate-500 md:ml-20 md:w-[calc(100%-5rem)]">
               <span
                 class="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-primary shadow-sm">
@@ -173,28 +149,25 @@
               </span>
               <div class="min-w-0">
                 <p class="font-bold text-slate-700">
-                  Di chuyen {{ formatTravelTime(getTravelMinutesForIndex(index))
+                  Di chuyển {{ formatTravelTime(getTravelMinutesForIndex(index))
                   }}
                 </p>
                 <p class="mt-0.5 text-[11px] text-slate-400">
                   {{ formatTravelDistance(getTravelDistanceForIndex(index)) ||
-                  'Uoc tinh theo vi tri hien co' }}
+                  'Ước tính theo vị trí hiện có' }}
                 </p>
               </div>
             </div>
 
-            <div
-              class="timeline-item relative flex gap-4 md:gap-6"
+            <div class="timeline-item relative flex gap-4 md:gap-6"
               [class.timeline-line]="!last && stops()[index + 1]?.dayNumber === stop.dayNumber"
-              [class.dragging]="dragIndex() === index"
-              draggable="true"
+              [class.dragging]="dragIndex() === index" draggable="true"
               (dragstart)="onDragStart($event, index)"
-              (dragover)="onDragOver($event)"
-              (drop)="onDrop($event, index)"
+              (dragover)="onDragOver($event)" (drop)="onDrop($event, index)"
               (dragend)="onDragEnd()">
               <div
                 class="relative z-10 flex h-12 w-12 shrink-0 cursor-grab items-center justify-center rounded-2xl border border-slate-100 bg-white text-lg font-black text-primary shadow-sm active:cursor-grabbing md:h-14 md:w-14">
-                {{ index + 1 }}
+                {{ getDisplayIndexForDay(index) }}
               </div>
 
               <div
@@ -209,24 +182,22 @@
                       <h4
                         class="text-base font-bold text-slate-800 md:text-lg">{{
                         stop.name }}</h4>
-                      <p class="text-xs font-medium text-slate-400">
+                      <p *ngIf="stop.district"
+                        class="mt-1 text-xs font-medium text-slate-400">
                         <i class="fa-solid fa-location-dot mr-1"></i> {{
                         stop.district }}
                       </p>
                     </div>
                     <div class="flex items-center gap-2">
-                      <select
-                        [ngModel]="stop.dayNumber"
+                      <select [ngModel]="stop.dayNumber"
                         (ngModelChange)="updateStopDay(stop.id, $event)"
                         class="rounded-xl border-none bg-slate-50 px-3 py-2 text-[11px] font-bold text-slate-600 outline-none">
                         <option *ngFor="let dayNumber of availableDays()"
                           [ngValue]="dayNumber">
-                          Ngay {{ dayNumber }}
+                          Ngày {{ dayNumber }}
                         </option>
                       </select>
-                      <button
-                        type="button"
-                        (click)="removeStop(stop.id)"
+                      <button type="button" (click)="removeStop(stop.id)"
                         class="text-slate-300 transition hover:text-red-500">
                         <i class="fa-solid fa-trash-can"></i>
                       </button>
@@ -236,43 +207,46 @@
                   <div
                     class="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
                     <!-- Time -->
-                    <button
-                      type="button"
-                      (click)="openTimePicker(stop.id, 'start', stop.startTime)"
-                      class="flex items-center gap-2 rounded-xl bg-slate-50 p-2 text-left md:p-3">
-                      <i class="fa-regular fa-clock text-xs text-primary"></i>
-                      <span
-                        class="text-[11px] font-bold text-slate-700 md:text-xs">{{
-                        stop.startTime || 'Bat dau' }}</span>
-                    </button>
-                    <button
-                      type="button"
-                      (click)="openTimePicker(stop.id, 'end', stop.endTime)"
-                      class="flex items-center gap-2 rounded-xl bg-slate-50 p-2 text-left md:p-3">
-                      <i class="fa-regular fa-clock text-xs text-slate-400"></i>
-                      <span
-                        class="text-[11px] font-bold text-slate-700 md:text-xs">{{
-                        stop.endTime || 'Ket thuc' }}</span>
-                    </button>
+                    <label
+                      class="rounded-xl bg-slate-50 p-2 md:p-3">
+                      <div class="min-w-0">
+                        <!-- <span class="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-slate-400">Bắt đầu</span> -->
+                        <input type="time" step="900"
+                          [ngModel]="stop.startTime"
+                          (ngModelChange)="updateStopStartTime(stop.id, $event)"
+                          class="w-full bg-transparent text-[11px] font-bold text-slate-700 outline-none md:text-xs" />
+                      </div>
+                    </label>
+                    <label
+                      class="rounded-xl bg-slate-50 p-2 md:p-3">
+                      <div class="min-w-0">
+                        <!-- <span class="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-slate-400">Kết thúc</span> -->
+                        <input type="time" step="900"
+                          [ngModel]="stop.endTime"
+                          (ngModelChange)="updateStopEndTime(stop.id, $event)"
+                          class="w-full bg-transparent text-[11px] font-bold text-slate-700 outline-none md:text-xs" />
+                      </div>
+                    </label>
                     <!-- Note -->
-                    <input
-                      type="text"
-                      [ngModel]="stop.note"
+                    <input type="text" [ngModel]="stop.note"
                       (ngModelChange)="updateStopNote(stop.id, $event)"
                       placeholder="Thêm ghi chú..."
                       class="rounded-xl border-none bg-slate-50 p-2 text-[11px] font-medium outline-none md:p-3 md:text-xs" />
                     <!-- Category -->
                     <!-- Cost -->
                     <div
-                      class="flex items-center gap-1 rounded-xl bg-slate-50 p-2 md:p-3">
+                      class="planner-detail-chip flex items-center gap-2 rounded-xl bg-slate-50 p-2.5 md:p-3">
                       <i class="fa-solid fa-coins text-xs text-primary"></i>
-                      <input
-                        type="number"
-                        [ngModel]="stop.cost"
-                        (ngModelChange)="updateStopCost(stop.id, $event)"
-                        placeholder="Chi phí"
-                        min="0"
-                        class="w-full bg-transparent text-[11px] font-bold outline-none md:text-xs" />
+                      <div class="min-w-0 flex-1">
+                        <!-- <span class="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-slate-400">Chi phí</span> -->
+                        <input type="text"
+                          inputmode="numeric"
+                          [ngModel]="getStopCostInputValue(stop.id, stop.cost)"
+                          (ngModelChange)="onStopCostInput(stop.id, $event)"
+                          (blur)="onStopCostBlur(stop.id)"
+                          placeholder="0 đ"
+                          class="w-full bg-transparent text-[11px] font-bold text-slate-700 outline-none md:text-xs" />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -283,16 +257,13 @@
           <!-- Add stop buttons -->
           <div
             class="ml-14 flex w-[calc(100%-3.5rem)] flex-col gap-3 md:ml-20 md:w-[calc(100%-5rem)]">
-            <button
-              type="button"
-              (click)="openSearchModal()"
-              class="group flex flex-1 items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-primary/40 bg-primary/5 py-6 text-sm font-bold text-primary transition hover:border-primary hover:bg-primary/10 md:py-8 md:text-base">
+
+            <button type="button" (click)="openSearchModal()"
+              class="group flex flex-1 items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-primary/40 bg-primary/5 py-4 text-sm font-bold text-primary transition hover:border-primary hover:bg-primary/10 md:py-6 md:text-base">
               <i class="fa-solid fa-magnifying-glass text-lg"></i>
               Tìm quán để thêm
             </button>
-            <button
-              type="button"
-              (click)="addEmptyStop()"
+            <button type="button" (click)="addEmptyStop()"
               class="hidden group flex-1 items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-slate-200 py-6 text-sm font-bold text-slate-400 transition hover:border-slate-400 hover:text-slate-600 md:py-8 md:text-base">
               <i class="fa-solid fa-plus-circle text-lg"></i>
               Thêm thủ công
@@ -307,24 +278,31 @@
       <div
         class="custom-shadow rounded-[32px] border border-white bg-white p-6 md:p-8">
         <div class="mb-3 flex items-center justify-between">
-          <h4 class="font-black text-slate-800">Chi phí dự kiến</h4>
+          <h4 class="font-black text-slate-800">Ngân sách chuyến đi</h4>
           <i class="fa-solid fa-wallet text-lg text-primary"></i>
         </div>
         <p class="text-3xl font-black text-primary">
-          {{ formatCurrency(totalCost()) }}<span
-            class="ml-1 text-base font-bold text-slate-400">đ</span>
+          {{ formatCurrencyVnd(displayedBudget()) }}
         </p>
         <p class="mt-2 text-xs text-slate-400">
-          Tổng từ {{ stops().length }} điểm dừng
+          {{ tripBudget() !== null ? 'Ngân sách bạn đã nhập cho toàn chuyến đi'
+          : 'Tổng chi phí hiện tại từ các điểm dừng' }}
         </p>
+        <div *ngIf="tripBudget() !== null"
+          class="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-xs text-slate-500">
+          <div class="flex items-center justify-between gap-3">
+            <span class="font-medium">Chi phí các điểm đã lên</span>
+            <span class="font-bold text-slate-700">{{
+              formatCurrencyVnd(totalCost()) }}</span>
+          </div>
+        </div>
         <div class="mt-4 space-y-2">
-          <div
-            *ngFor="let stop of stops(); let i = index"
+          <div *ngFor="let stop of stops(); let i = index"
             class="flex items-center justify-between text-xs">
             <span class="truncate font-medium text-slate-500">{{ i + 1 }}. {{
               stop.name }}</span>
             <span class="ml-2 shrink-0 font-bold text-slate-700">{{
-              formatCurrency(stop.cost) }}đ</span>
+              formatCurrencyVnd(stop.cost) }}</span>
           </div>
         </div>
       </div>
@@ -340,21 +318,22 @@
 
         <div class="mb-6 flex flex-wrap gap-3">
           <div *ngFor="let member of members()" class="group relative">
-            <img
-              [src]="member.avatar"
-              [alt]="member.name"
+            <img [src]="member.avatar" [alt]="member.name"
               class="h-12 w-12 cursor-pointer rounded-full border-2 border-white shadow-sm"
-              [class.ring-2]="member.id === 'owner'"
-              [class.ring-primary]="member.id === 'owner'" />
-            <span
-              *ngIf="member.isOnline"
+              [class.ring-2]="isOwnerMember(member.id)"
+              [class.ring-primary]="isOwnerMember(member.id)" />
+            <span *ngIf="member.isOnline"
               class="absolute -right-1 -top-1 h-4 w-4 rounded-full border-2 border-white bg-green-500"
               title="Online"></span>
+            <button *ngIf="!isOwnerMember(member.id)" type="button"
+              (click)="removeMember(member.id)"
+              class="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] text-slate-400 shadow transition hover:text-red-500"
+              title="Xóa bạn đồng hành">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
           </div>
 
-          <button
-            type="button"
-            (click)="openInviteModal()"
+          <button type="button" (click)="openInviteModal()"
             class="flex h-12 w-12 items-center justify-center rounded-full border-2 border-dashed border-slate-300 text-slate-400 transition hover:border-primary hover:text-primary">
             <i class="fa-solid fa-plus"></i>
           </button>
@@ -364,9 +343,7 @@
           "Mời thêm bạn bè để cùng nhau lên ý tưởng cho chuyến đi tuyệt vời nhất!"
         </p>
 
-        <button
-          type="button"
-          (click)="openInviteModal()"
+        <button type="button" (click)="openInviteModal()"
           class="w-full rounded-2xl bg-slate-800 py-4 text-sm font-bold text-white shadow-lg transition hover:bg-black">
           Mời bạn cùng đi ngay
         </button>
@@ -375,28 +352,19 @@
   </div>
 
   <!-- ═══════ Search Place Modal ═══════ -->
-  <input
-    #timePickerInput
-    type="text"
-    class="sr-only"
-    aria-label="Chon thoi gian" />
 
-  <div
-    *ngIf="searchModalOpen()"
+  <div *ngIf="searchModalOpen()"
     class="fixed inset-0 z-[100] flex items-end justify-center sm:items-center sm:p-4">
-    <div
-      class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
       (click)="closeSearchModal()"></div>
     <div
       class="search-modal relative flex w-full max-w-lg flex-col rounded-t-[32px] bg-white shadow-2xl sm:max-h-[80vh] sm:rounded-[32px]">
       <!-- Header -->
       <div class="flex items-center gap-3 border-b border-slate-100 p-6 pb-4">
         <div
-          class="flex flex-1 items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3">
+          class="flex flex-1 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-xs font-bold text-slate-700 outline-none ng-pristine ng-valid ng-touched">
           <i class="fa-solid fa-magnifying-glass text-sm text-slate-400"></i>
-          <input
-            type="text"
-            [ngModel]="searchQuery()"
+          <input type="text" [ngModel]="searchQuery()"
             (ngModelChange)="onSearchInput($event)"
             placeholder="Tìm quán cà phê, nhà hàng, khách sạn..."
             class="w-full bg-transparent text-sm font-medium outline-none placeholder:text-slate-300"
@@ -404,9 +372,15 @@
           <div *ngIf="searchLoading()"
             class="search-spinner h-4 w-4 shrink-0 rounded-full border-2 border-primary/30 border-t-primary"></div>
         </div>
-        <button
-          type="button"
-          (click)="closeSearchModal()"
+        <select [ngModel]="selectedInsertDay()"
+          (ngModelChange)="selectedInsertDay.set($event)"
+          class="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-xs font-bold text-slate-700 outline-none">
+          <option *ngFor="let dayNumber of availableDays()"
+            [ngValue]="dayNumber">
+            Ngày {{ dayNumber }}
+          </option>
+        </select>
+        <button type="button" (click)="closeSearchModal()"
           class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
           <i class="fa-solid fa-xmark text-lg"></i>
         </button>
@@ -425,9 +399,7 @@
                 <i class="fa-solid fa-location-crosshairs text-primary"></i>
                 Quán gần bạn
               </h4>
-              <button
-                *ngIf="locationDenied()"
-                type="button"
+              <button *ngIf="locationDenied()" type="button"
                 (click)="requestLocation()"
                 class="text-[11px] font-bold text-primary transition hover:underline">
                 Bật vị trí
@@ -435,41 +407,34 @@
             </div>
 
             <!-- Location denied / no coords -->
-            <div
-              *ngIf="nearbyPlaces().length === 0 && !nearbyLoading()"
+            <div *ngIf="nearbyPlaces().length === 0 && !nearbyLoading()"
               class="flex flex-col items-center rounded-2xl bg-slate-50 py-8 text-center">
               <i
                 class="fa-solid fa-location-dot mb-2 text-2xl text-slate-200"></i>
               <p class="text-xs font-medium text-slate-400">Cho phép truy cập vị
                 trí để xem quán gần bạn</p>
-              <button
-                type="button"
-                (click)="requestLocation()"
+              <button type="button" (click)="requestLocation()"
                 class="mt-3 rounded-xl bg-primary/10 px-4 py-2 text-xs font-bold text-primary transition hover:bg-primary/20">
                 <i class="fa-solid fa-location-crosshairs mr-1"></i> Bật vị trí
               </button>
             </div>
 
             <!-- Loading -->
-            <div
-              *ngIf="nearbyLoading()"
+            <div *ngIf="nearbyLoading()"
               class="flex items-center justify-center py-8">
               <div
                 class="search-spinner h-6 w-6 rounded-full border-2 border-primary/30 border-t-primary"></div>
             </div>
 
             <!-- Nearby cards -->
-            <div
-              *ngIf="nearbyPlaces().length > 0 && !nearbyLoading()"
+            <div *ngIf="nearbyPlaces().length > 0 && !nearbyLoading()"
               class="hide-scrollbar flex gap-3 overflow-x-auto pb-2">
-              <div
-                *ngFor="let place of nearbyPlaces()"
+              <div *ngFor="let place of nearbyPlaces()"
                 class="group flex w-44 shrink-0 flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white transition hover:shadow-md">
                 <div class="relative h-24 w-full bg-slate-100">
                   <img [src]="place.image" [alt]="place.name"
                     class="h-full w-full object-cover" />
-                  <span
-                    *ngIf="place.distance_km"
+                  <span *ngIf="place.distance_km"
                     class="absolute bottom-1.5 left-1.5 rounded-lg bg-white/90 px-1.5 py-0.5 text-[9px] font-bold text-slate-600 backdrop-blur-sm">
                     {{ place.distance_km | number:'1.1-1' }} km
                   </span>
@@ -486,15 +451,12 @@
                       class="flex items-center gap-0.5 text-[10px] font-bold text-amber-500">
                       <i class="fa-solid fa-star"></i> {{ place.rating }}
                     </span>
-                    <button
-                      *ngIf="!isPlaceAlreadyAdded(place.slug)"
-                      type="button"
-                      (click)="addPlaceAsStop(place)"
+                    <button *ngIf="!isPlaceAlreadyAdded(place.slug)"
+                      type="button" (click)="addPlaceAsStop(place)"
                       class="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-xs text-primary transition hover:bg-primary hover:text-white">
                       <i class="fa-solid fa-plus"></i>
                     </button>
-                    <span
-                      *ngIf="isPlaceAlreadyAdded(place.slug)"
+                    <span *ngIf="isPlaceAlreadyAdded(place.slug)"
                       class="flex h-7 w-7 items-center justify-center rounded-lg bg-green-50 text-xs text-green-500">
                       <i class="fa-solid fa-check"></i>
                     </span>
@@ -513,8 +475,7 @@
             </h4>
 
             <!-- Loading -->
-            <div
-              *ngIf="trendingLoading()"
+            <div *ngIf="trendingLoading()"
               class="flex items-center justify-center py-8">
               <div
                 class="search-spinner h-6 w-6 rounded-full border-2 border-primary/30 border-t-primary"></div>
@@ -522,8 +483,7 @@
 
             <!-- Trending list -->
             <div *ngIf="!trendingLoading()" class="space-y-2">
-              <div
-                *ngFor="let place of trendingPlaces(); let i = index"
+              <div *ngFor="let place of trendingPlaces(); let i = index"
                 class="group flex items-center gap-3 rounded-2xl border border-transparent p-2.5 transition hover:border-slate-100 hover:bg-slate-50">
                 <span
                   class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-xs font-black text-slate-400">
@@ -547,15 +507,12 @@
                       place.district_name }}</span>
                   </p>
                 </div>
-                <button
-                  *ngIf="!isPlaceAlreadyAdded(place.slug)"
-                  type="button"
+                <button *ngIf="!isPlaceAlreadyAdded(place.slug)" type="button"
                   (click)="addPlaceAsStop(place)"
                   class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-xs text-primary transition hover:bg-primary hover:text-white">
                   <i class="fa-solid fa-plus"></i>
                 </button>
-                <span
-                  *ngIf="isPlaceAlreadyAdded(place.slug)"
+                <span *ngIf="isPlaceAlreadyAdded(place.slug)"
                   class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-green-50 text-xs text-green-500">
                   <i class="fa-solid fa-check"></i>
                 </span>
@@ -577,14 +534,11 @@
 
         <!-- Result list -->
         <div class="space-y-2">
-          <div
-            *ngFor="let place of searchResults()"
+          <div *ngFor="let place of searchResults()"
             class="group flex items-center gap-3 rounded-2xl border border-transparent p-3 transition hover:border-slate-100 hover:bg-slate-50">
             <div
               class="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-slate-100">
-              <img
-                [src]="place.image"
-                [alt]="place.name"
+              <img [src]="place.image" [alt]="place.name"
                 class="h-full w-full object-cover" />
             </div>
             <div class="min-w-0 flex-1">
@@ -606,15 +560,12 @@
                 </span>
               </div>
             </div>
-            <button
-              *ngIf="!isPlaceAlreadyAdded(place.slug)"
-              type="button"
+            <button *ngIf="!isPlaceAlreadyAdded(place.slug)" type="button"
               (click)="addPlaceAsStop(place)"
               class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition hover:bg-primary hover:text-white">
               <i class="fa-solid fa-plus"></i>
             </button>
-            <span
-              *ngIf="isPlaceAlreadyAdded(place.slug)"
+            <span *ngIf="isPlaceAlreadyAdded(place.slug)"
               class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-500">
               <i class="fa-solid fa-check"></i>
             </span>
@@ -625,43 +576,33 @@
   </div>
 
   <!-- ═══════ Invite Modal ═══════ -->
-  <div
-    *ngIf="inviteModalOpen()"
+  <div *ngIf="inviteModalOpen()"
     class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-    <div
-      class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
       (click)="closeInviteModal()"></div>
     <div
       class="relative w-full max-w-sm rounded-[32px] bg-white p-8 shadow-2xl">
       <h3 class="mb-6 text-center text-xl font-black text-slate-800">Mời bạn
         đồng hành</h3>
-      <input
-        type="email"
-        [ngModel]="inviteEmail()"
+      <input type="email" [ngModel]="inviteEmail()"
         (ngModelChange)="inviteEmail.set($event)"
         placeholder="Nhập email của bạn bè..."
         class="mb-4 w-full rounded-2xl border-none bg-slate-50 px-6 py-4 font-medium outline-none focus:ring-2 focus:ring-primary" />
-      <button
-        type="button"
-        (click)="sendInvite()"
+      <button type="button" (click)="sendInvite()"
         class="w-full rounded-2xl bg-primary py-4 font-black text-white shadow-lg">
-        Gửi lời mời
+        {{ addingMember() ? 'Đang thêm...' : 'Gửi lời mời' }}
       </button>
     </div>
   </div>
 
   <!-- ═══════ Undo Toast ═══════ -->
-  <div
-    *ngIf="showUndoToast()"
+  <div *ngIf="showUndoToast()"
     class="undo-toast fixed bottom-6 left-1/2 z-[200] flex -translate-x-1/2 items-center gap-4 rounded-2xl bg-slate-800 px-6 py-4 shadow-2xl">
     <i class="fa-solid fa-trash-can text-red-400"></i>
     <span class="text-sm font-medium text-white">Đã xóa điểm dừng</span>
-    <button
-      type="button"
-      (click)="undoDelete()"
+    <button type="button" (click)="undoDelete()"
       class="rounded-xl bg-white/20 px-4 py-1.5 text-sm font-bold text-white transition hover:bg-white/30">
       Hoàn tác
     </button>
   </div>
 </div>
-

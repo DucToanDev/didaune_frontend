@@ -36,6 +36,7 @@ export interface AdminItineraryLocation {
   id: string;
   name: string;
   slug: string;
+  image?: string | null;
   main_category?: string | null;
   full_address?: string | null;
   latitude?: number | null;
@@ -309,6 +310,7 @@ interface BackendItineraryLocation {
   id: string;
   name: string;
   slug: string;
+  image?: string | null;
   main_category?: string | null;
   full_address?: string | null;
   latitude?: number | null;

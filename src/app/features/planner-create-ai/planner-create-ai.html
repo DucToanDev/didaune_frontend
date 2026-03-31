@@ -1,0 +1,156 @@
+<div class="mx-auto max-w-7xl p-4 pb-24 md:pb-10 lg:p-8">
+  <!-- ── Header ── -->
+  <section class="mb-6">
+    <h1 class="text-2xl font-black text-slate-800 md:text-3xl">Tạo lịch trình
+      bằng AI</h1>
+  </section>
+
+  <!-- ── Main grid ── -->
+  <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr),30rem]">
+    <app-planner-trip-form heading="Thông tin chuyến đi"
+      descriptionHint="Tên, mô tả, ngày đi và ảnh bìa sẽ được đưa vào brief ban đầu để AI tạo khung lịch trình."
+      [title]="tripTitle()" [description]="tripDescription()"
+      [coverPreviewUrl]="coverPreviewUrl()"
+      [startDate]="startDate()" [endDate]="endDate()"
+      [showTitleWarning]="showTitleWarning()"
+      (titleChange)="tripTitle.set($event)"
+      (descriptionChange)="tripDescription.set($event)"
+      (coverChange)="coverPreviewUrl.set($event)"
+      (startDateChange)="startDate.set($event)"
+      (endDateChange)="endDate.set($event)">
+    </app-planner-trip-form>
+
+    <!-- ── Sidebar ── -->
+    <aside>
+      <section
+        class="custom-shadow rounded-3xl border border-white/80 bg-white p-5">
+        <div class="mb-4 flex items-center gap-2">
+          <div
+            class="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-sm">
+            <i class="fa-solid fa-sliders text-[10px]"></i>
+          </div>
+          <div>
+            <h2 class="text-sm font-black text-slate-800">Thông tin cho AI</h2>
+            <p class="text-xs text-slate-400">Càng rõ, gợi ý càng sát</p>
+          </div>
+        </div>
+
+        <div class="space-y-3.5">
+          <!-- Row: Số người + Chi phí -->
+          <div class="grid grid-cols-2 gap-3">
+            <label class="block">
+              <span class="ai-label">Số người</span>
+              <input type="number" min="1" [ngModel]="peopleCount()"
+                (ngModelChange)="peopleCount.set(+$event || 1)"
+                class="ai-input" />
+            </label>
+            <label class="block">
+              <span class="ai-label">Chi phí ước tính</span>
+              <input type="number" min="0" [ngModel]="estimatedBudget()"
+                (ngModelChange)="estimatedBudget.set($event === '' ? null : +$event)"
+                placeholder="3,000,000"
+                class="ai-input" />
+            </label>
+          </div>
+
+          <!-- Địa điểm -->
+          <label class="block">
+            <span class="ai-label">Địa điểm muốn tới</span>
+            <input type="text" [ngModel]="destinationCity()"
+              (ngModelChange)="destinationCity.set($event)"
+              placeholder="Đà Lạt, Vũng Tàu, Đà Nẵng…" class="ai-input" />
+          </label>
+
+          <!-- Các điểm muốn ghé -->
+          <label class="block">
+            <span class="ai-label">Điểm muốn ghé</span>
+            <textarea [ngModel]="desiredPlaces()"
+              (ngModelChange)="desiredPlaces.set($event)" rows="2"
+              placeholder="Tiệm cafe view đẹp, chợ đêm, bãi biển…"
+              class="ai-input resize-none"></textarea>
+          </label>
+
+          <!-- Sở thích -->
+          <label class="block">
+            <span class="ai-label">Sở thích</span>
+            <input type="text" [ngModel]="preferencesInput()"
+              (ngModelChange)="preferencesInput.set($event)"
+              placeholder="cafe, ăn uống, chill, sống ảo" class="ai-input" />
+          </label>
+
+          <!-- Row: Kiểu chuyến đi + Nhịp độ -->
+          <div class="grid grid-cols-2 gap-3">
+            <label class="block">
+              <span class="ai-label">Kiểu chuyến đi</span>
+              <select [ngModel]="tripStyle()"
+                (ngModelChange)="tripStyle.set($event)" class="ai-input">
+                <option value="balanced">Cân bằng</option>
+                <option value="relaxed">Nhẹ nhàng</option>
+                <option value="packed">Đi nhiều</option>
+              </select>
+            </label>
+            <label class="block">
+              <span class="ai-label">Nhịp độ</span>
+              <select [ngModel]="energyLevel()"
+                (ngModelChange)="energyLevel.set($event)" class="ai-input">
+                <option value="balanced">Linh hoạt</option>
+                <option value="low">Thư thái</option>
+                <option value="high">Năng động</option>
+              </select>
+            </label>
+          </div>
+
+          <!-- Row: Đi cùng ai + Phương tiện -->
+          <div class="grid grid-cols-2 gap-3">
+            <label class="block">
+              <span class="ai-label">Đi cùng ai</span>
+              <select [ngModel]="companionType()"
+                (ngModelChange)="companionType.set($event)" class="ai-input">
+                <option value="couple">Cặp đôi</option>
+                <option value="friends">Bạn bè</option>
+                <option value="family">Gia đình</option>
+                <option value="solo">Một mình</option>
+              </select>
+            </label>
+            <label class="block">
+              <span class="ai-label">Phương tiện</span>
+              <select [ngModel]="travelMode()"
+                (ngModelChange)="travelMode.set($event)" class="ai-input">
+                <option value="car">Ô tô</option>
+                <option value="motorbike">Xe máy</option>
+                <option value="walking">Đi bộ</option>
+                <option value="mixed">Linh hoạt</option>
+              </select>
+            </label>
+          </div>
+
+          <!-- Yêu cầu thêm -->
+          <label class="block">
+            <span class="ai-label">Yêu cầu thêm</span>
+            <textarea [ngModel]="extraNotes()"
+              (ngModelChange)="extraNotes.set($event)" rows="2"
+              placeholder="Ưu tiên điểm gần nhau, có chỗ đậu xe…"
+              class="ai-input resize-none"></textarea>
+          </label>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <!-- ── CTA bottom ── -->
+  <div class="mt-6 flex justify-end">
+    <button type="button" (click)="generateTrip()" [disabled]="saving()"
+      class="group relative w-full overflow-hidden rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white transition-all duration-300 hover:shadow-md hover:shadow-slate-900/30 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed sm:w-auto md:px-10 md:py-3">
+      <span class="relative z-10 flex items-center justify-center gap-2">
+        <ng-container *ngIf="saving(); else readyLabel">
+          <span class="ai-spinner"></span>
+          Đang tạo lịch trình…
+        </ng-container>
+        <ng-template #readyLabel>
+          <i class="fa-solid fa-sparkles text-xs opacity-80"></i>
+          Tạo lịch trình bằng AI
+        </ng-template>
+      </span>
+    </button>
+  </div>
+</div>

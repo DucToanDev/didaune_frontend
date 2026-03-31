@@ -6,6 +6,7 @@ import { Favorite } from './features/favorite/favorite';
 import { Home } from './features/home/home';
 import { MapPage } from './features/map-page/map-page';
 import { Planner } from './features/planner/planner';
+import { PlannerCreateAi } from './features/planner-create-ai/planner-create-ai';
 import { PlannerList } from './features/planner-list/planner-list';
 import { PartnerRegister } from './features/partner-register/partner-register';
 import { Profile } from './features/profile/profile';
@@ -21,7 +22,7 @@ const requireAuth = () => {
     return true;
   }
 
-  dataService.requestAuthModal('login');
+  dataService.requestProtectedAuthModal('login');
   return router.createUrlTree(['/']);
 };
 
@@ -35,19 +36,21 @@ export const routes: Routes = [
     path: '',
     component: UserShell,
     children: [
-      { path: '', component: Home, title: 'Trang chu' },
-      { path: 'discover', component: Discover, title: 'Kham pha dia diem' },
+      { path: '', component: Home, title: 'Trang chủ' },
+      { path: 'discover', component: Discover, title: 'Khám phá địa điểm' },
       { path: 'list', redirectTo: 'discover' },
-      { path: 'map', component: MapPage, title: 'Ban do dia diem' },
-      { path: 'planner', component: PlannerList, title: 'Lich trinh cua ban' },
-      { path: 'planner/new', component: Planner, title: 'Tao lich trinh' },
+      { path: 'map', component: MapPage, title: 'Bản đồ địa điểm' },
+      { path: 'planner', component: PlannerList, title: 'Lịch trình của bạn' },
+      { path: 'planner/new', redirectTo: 'planner/new/manual', pathMatch: 'full' },
+      { path: 'planner/new/ai', component: PlannerCreateAi, title: 'Tạo lịch trình bằng AI' },
+      { path: 'planner/new/manual', component: Planner, title: 'Tạo lịch trình thủ công' },
       { path: 'planner/edit', redirectTo: 'planner' },
-      { path: 'planner/:id/edit', component: Planner, title: 'Chinh sua chuyen di' },
-      { path: 'partner/register', component: PartnerRegister, title: 'Dang ky doi tac' },
-      { path: 'favorite', component: Favorite, title: 'Yeu thich', canActivate: [requireAuth] },
-      { path: 'detail/:slug', component: Detail, title: 'Chi tiet' },
-      { path: 'profile', component: Profile, title: 'Ho so', canActivate: [requireAuth] },
-      { path: 'reviews/:slug', component: Reviews, title: 'Danh gia' },
+      { path: 'planner/:id/edit', component: Planner, title: 'Chỉnh sửa chuyến đi' },
+      { path: 'partner/register', component: PartnerRegister, title: 'Đăng ký đối tác' },
+      { path: 'favorite', component: Favorite, title: 'Yêu thích', canActivate: [requireAuth] },
+      { path: 'detail/:slug', component: Detail, title: 'Chi tiết' },
+      { path: 'profile', component: Profile, title: 'Hồ sơ', canActivate: [requireAuth] },
+      { path: 'reviews/:slug', component: Reviews, title: 'Đánh giá' },
     ],
   },
   { path: '**', redirectTo: '' },

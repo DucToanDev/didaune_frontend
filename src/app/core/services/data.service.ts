@@ -32,6 +32,7 @@ import {
   AMENITY_CONFIG,
   CATEGORY_CONFIG,
 } from '../config/place-taxonomy.config';
+import { buildUiAvatarUrl } from '../utils/avatar.utils';
 import { LocationApiService } from './location-api.service';
 import { PlaceMapperService } from './place-mapper.service';
 
@@ -67,8 +68,7 @@ const DEFAULT_USER: User = {
   id: 'guest',
   name: 'Khach',
   email: '',
-  avatar:
-    'https://ui-avatars.com/api/?name=Khach&background=f97316&color=ffffff&size=128',
+  avatar: buildUiAvatarUrl('Khach', 'f97316', 'ffffff', 128),
   bio: '',
   membership: 'Guest',
   points: 0,
@@ -78,6 +78,29 @@ type StoredReviewDraft = Pick<
   PlaceReview,
   'place_slug' | 'rating' | 'comment' | 'images'
 >;
+
+type PendingAuthAction =
+  | {
+      type: 'favorite';
+      slug: string;
+    }
+  | {
+      type: 'review';
+      placeSlug: string;
+    }
+  | {
+      type: 'planner-ai';
+    }
+  | {
+      type: 'planner-manual';
+    };
+
+interface ProtectedAuthPrompt {
+  mode: 'login' | 'register';
+  title: string;
+  description: string;
+  confirmText: string;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -94,6 +117,7 @@ export class DataService {
   private authTokenStorageKey = 'didaune_auth_token';
   private coordinatesStorageKey = 'didaune_coordinates';
   private recentViewedStorageKey = 'didaune_recent_viewed';
+  private pendingAuthActionStorageKey = 'didaune_pending_auth_action';
 
   currentCityId = signal('hcm');
   currentDistrictId = signal('all');
@@ -105,6 +129,7 @@ export class DataService {
   sortOption = signal<'popular' | 'rating' | 'name' | 'new'>('popular');
   mobileSidebarOpen = signal(false);
   authModalRequest = signal<'login' | 'register' | null>(null);
+  protectedAuthPrompt = signal<ProtectedAuthPrompt | null>(null);
   currentCoordinates = signal<{ lat: number; lng: number } | null>(
     this.readStorage<{ lat: number; lng: number } | null>(
       this.coordinatesStorageKey,
@@ -388,6 +413,14 @@ export class DataService {
   }
 
   toggleFavorite(slug: string) {
+    if (!this.isAuthenticated()) {
+      this.requestAuthForAction({
+        type: 'favorite',
+        slug,
+      });
+      return;
+    }
+
     this.getPlaceBySlug(slug).subscribe((place) => {
       if (!place) {
         return;
@@ -608,8 +641,56 @@ export class DataService {
     this.authModalRequest.set(mode);
   }
 
+  requestProtectedAuthModal(mode: 'login' | 'register' = 'login') {
+    this.protectedAuthPrompt.set({
+      mode,
+      title: 'Cần đăng nhập',
+      description: 'Bạn cần đăng nhập để tiếp tục sử dụng chức năng này.',
+      confirmText: mode === 'register' ? 'Tạo tài khoản' : 'Đăng nhập',
+    });
+  }
+
+  requestAuthForAction(
+    action: PendingAuthAction,
+    mode: 'login' | 'register' = 'login',
+  ) {
+    this.writeSessionStorage(this.pendingAuthActionStorageKey, action);
+    this.requestProtectedAuthModal(mode);
+  }
+
   clearAuthModalRequest() {
     this.authModalRequest.set(null);
+  }
+
+  confirmProtectedAuthPrompt() {
+    const prompt = this.protectedAuthPrompt();
+    if (!prompt) {
+      return;
+    }
+
+    this.protectedAuthPrompt.set(null);
+    this.requestAuthModal(prompt.mode);
+  }
+
+  dismissProtectedAuthPrompt() {
+    this.protectedAuthPrompt.set(null);
+  }
+
+  resumePendingAuthAction() {
+    const action = this.readSessionStorage<PendingAuthAction | null>(
+      this.pendingAuthActionStorageKey,
+      null,
+    );
+
+    if (!action) {
+      return;
+    }
+
+    this.removeSessionStorage(this.pendingAuthActionStorageKey);
+
+    if (action.type === 'favorite') {
+      this.toggleFavorite(action.slug);
+    }
   }
 
   private refreshFavoritesFromApi() {
@@ -677,6 +758,40 @@ export class DataService {
     window.localStorage.removeItem(key);
   }
 
+  private readSessionStorage<T>(key: string, fallback: T): T {
+    if (typeof window === 'undefined') {
+      return fallback;
+    }
+
+    const value = window.sessionStorage.getItem(key);
+
+    if (!value) {
+      return fallback;
+    }
+
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return fallback;
+    }
+  }
+
+  private writeSessionStorage<T>(key: string, value: T) {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.sessionStorage.setItem(key, JSON.stringify(value));
+  }
+
+  private removeSessionStorage(key: string) {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.sessionStorage.removeItem(key);
+  }
+
   private createEmptyHomeData(cityId: string, wardCode: string): HomePageData {
     return {
       hero: {
@@ -717,9 +832,7 @@ export class DataService {
       email: user.email?.trim() || DEFAULT_USER.email,
       avatar:
         user.avatar_url?.trim() ||
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(
-          name,
-        )}&background=f97316&color=fff&size=128`,
+        buildUiAvatarUrl(name, 'f97316', 'fff', 128),
       bio: user.bio?.trim() || DEFAULT_USER.bio,
       membership: user.membership_tier?.trim() || DEFAULT_USER.membership,
       points:

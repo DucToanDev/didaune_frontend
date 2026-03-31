@@ -8,6 +8,7 @@ import {
 } from '../models/app.models';
 import { PROVINCE_MAPPINGS } from '../config/location-api.config';
 import { AMENITY_CONFIG, CATEGORY_CONFIG } from '../config/place-taxonomy.config';
+import { buildUiAvatarUrl } from '../utils/avatar.utils';
 
 export interface BackendLocationCategory {
   category_name: string;
@@ -200,7 +201,7 @@ export class PlaceMapperService {
       user_name: review.reviewer_name ?? 'Khách hàng',
       avatar:
         review.reviewer_avatar_url ??
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(review.reviewer_name ?? 'Khách')}&background=e2e8f0&color=0f172a`,
+        buildUiAvatarUrl(review.reviewer_name ?? 'Khach', 'e2e8f0', '0f172a'),
       rating: review.rating ?? 0,
       comment: review.review_text?.trim() || 'Khách hàng chưa để lại nội dung.',
       created_at: review.published_at ?? new Date().toISOString(),
@@ -501,7 +502,7 @@ export class PlaceMapperService {
         user_name: review.name,
         avatar:
           review.avatar_link ??
-          `https://ui-avatars.com/api/?name=${encodeURIComponent(review.name)}&background=e2e8f0&color=0f172a`,
+          buildUiAvatarUrl(review.name, 'e2e8f0', '0f172a'),
         rating: review.rating,
         comment: review.review_text?.trim() ?? 'Khách hàng chưa để lại nội dung.',
         created_at: review.published_at_date ?? new Date().toISOString(),

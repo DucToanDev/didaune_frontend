@@ -14,11 +14,12 @@ import {
 import { DataService } from '../../core/services/data.service';
 import { LocationApiService } from '../../core/services/location-api.service';
 import { combineLatest, startWith, switchMap } from 'rxjs';
+import { PlaceGridCardComponent } from '../../shared/ui/place-grid-card/place-grid-card';
 
 @Component({
   selector: 'app-discover',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, PlaceGridCardComponent],
   templateUrl: './discover.html',
   styleUrl: './discover.css',
 })
@@ -230,20 +231,8 @@ export class Discover {
     this.goToPage(1);
   }
 
-  toggleFavorite(event: Event, slug: string) {
-    event.stopPropagation();
-    event.preventDefault();
+  toggleFavorite(slug: string) {
     this.dataService.toggleFavorite(slug);
-  }
-
-  getSuggestedHours(place: Place): string {
-    const firstHour = place.hours.find((hour) => hour.times.length > 0);
-
-    if (!firstHour) {
-      return 'Chưa cập nhật';
-    }
-
-    return firstHour.times[0] ?? 'Chưa cập nhật';
   }
 
   goToPage(page: number) {

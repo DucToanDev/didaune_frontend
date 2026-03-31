@@ -1,5 +1,5 @@
 export const BACKEND_API_CONFIG = {
-  baseUrl: 'http://127.0.0.1:8000/api',
+  baseUrl: 'https://didaune-backend.onrender.com/api',
   defaultUserId: 1,
   googleClientId: '',
   facebookAppId: '',

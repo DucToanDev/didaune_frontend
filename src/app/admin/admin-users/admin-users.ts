@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { finalize, forkJoin } from 'rxjs';
 import { PaginationMeta } from '../../core/models/app.models';
 import { AdminUser, UserApiService } from '../../core/services/user-api.service';
 import { AdminHeader } from '../shared/admin-header/admin-header';
@@ -25,6 +25,9 @@ export class AdminUsers implements OnInit {
   search = signal('');
   roleFilter = signal('');
   activeFilter = signal<boolean | null>(null);
+  selectedUserIds = signal<number[]>([]);
+  bulkRole = signal('user');
+  bulkLoading = signal(false);
 
   // Create/Edit modal
   showModal = signal(false);
@@ -35,6 +38,8 @@ export class AdminUsers implements OnInit {
   formPassword = signal('');
   formRole = signal('user');
   formActive = signal(true);
+  formErrors = signal<Record<string, string[]>>({});
+  generalError = signal<string | null>(null);
 
   ngOnInit() {
     this.loadData();
@@ -54,6 +59,7 @@ export class AdminUsers implements OnInit {
       .subscribe((result) => {
         this.users.set(result.data);
         this.pagination.set(result.meta);
+        this.selectedUserIds.set([]);
       });
   }
 
@@ -73,6 +79,8 @@ export class AdminUsers implements OnInit {
     this.formPassword.set('');
     this.formRole.set('user');
     this.formActive.set(true);
+    this.formErrors.set({});
+    this.generalError.set(null);
     this.showModal.set(true);
   }
 
@@ -83,11 +91,15 @@ export class AdminUsers implements OnInit {
     this.formPassword.set('');
     this.formRole.set(user.role || 'user');
     this.formActive.set(user.is_active);
+    this.formErrors.set({});
+    this.generalError.set(null);
     this.showModal.set(true);
   }
 
   closeModal() {
     this.showModal.set(false);
+    this.formErrors.set({});
+    this.generalError.set(null);
   }
 
   saveUser() {
@@ -95,21 +107,35 @@ export class AdminUsers implements OnInit {
     const editing = this.editingUser();
 
     if (editing) {
+      const updatePayload: any = {
+        name: this.formName(),
+        email: this.formEmail(),
+        role: this.formRole(),
+        is_active: Number(this.formActive()), // Convert to 0/1
+      };
+
+      if (this.formPassword()) {
+        updatePayload.password = this.formPassword();
+      }
+
       this.userApi
-        .updateUser(editing.id, {
-          name: this.formName(),
-          email: this.formEmail(),
-          password: this.formPassword() || null,
-          role: this.formRole(),
-          is_active: this.formActive(),
-        })
+        .updateUser(editing.id, updatePayload)
         .pipe(finalize(() => this.saving.set(false)))
         .subscribe({
           next: () => {
             this.showModal.set(false);
             this.loadData(this.pagination().current_page);
           },
+          error: (err) => {
+            console.error('Update User Error:', err);
+            this.generalError.set(err.error?.message || 'Có lỗi xảy ra khi cập nhật người dùng.');
+            if (err.error?.errors) {
+              this.formErrors.set(err.error.errors);
+              console.table(err.error.errors); // Log validation errors clearly
+            }
+          },
         });
+
     } else {
       this.userApi
         .createUser({
@@ -117,7 +143,7 @@ export class AdminUsers implements OnInit {
           email: this.formEmail(),
           password: this.formPassword(),
           role: this.formRole(),
-          is_active: this.formActive(),
+          is_active: Number(this.formActive()) as any, // Cast to any to bypass boolean check if needed, but Number() returns 0/1
         })
         .pipe(finalize(() => this.saving.set(false)))
         .subscribe({
@@ -125,7 +151,16 @@ export class AdminUsers implements OnInit {
             this.showModal.set(false);
             this.loadData(1);
           },
+          error: (err) => {
+            console.error('Create User Error:', err);
+            this.generalError.set(err.error?.message || 'Có lỗi xảy ra khi tạo người dùng.');
+            if (err.error?.errors) {
+              this.formErrors.set(err.error.errors);
+              console.table(err.error.errors);
+            }
+          },
         });
+
     }
   }
 
@@ -133,6 +168,58 @@ export class AdminUsers implements OnInit {
     if (!confirm(`Xóa người dùng "${user.name}"?`)) return;
     this.userApi.deleteUser(user.id).subscribe(() => {
       this.users.update((list) => list.filter((u) => u.id !== user.id));
+      this.selectedUserIds.update((list) => list.filter((id) => id !== user.id));
     });
+  }
+
+  isSelected(userId: number) {
+    return this.selectedUserIds().includes(userId);
+  }
+
+  allSelectedOnPage() {
+    return this.users().length > 0 && this.users().every((user) => this.isSelected(user.id));
+  }
+
+  toggleSelection(userId: number, checked: boolean) {
+    this.selectedUserIds.update((selected) => {
+      if (checked) {
+        return [...new Set([...selected, userId])];
+      }
+
+      return selected.filter((id) => id !== userId);
+    });
+  }
+
+  toggleSelectPage(checked: boolean) {
+    if (checked) {
+      this.selectedUserIds.set(this.users().map((user) => user.id));
+      return;
+    }
+
+    this.selectedUserIds.set([]);
+  }
+
+  applyBulkActive(isActive: boolean) {
+    const ids = this.selectedUserIds();
+    if (!ids.length) return;
+
+    this.bulkLoading.set(true);
+    forkJoin(ids.map((id) => this.userApi.updateUser(id, { is_active: isActive })))
+      .pipe(finalize(() => this.bulkLoading.set(false)))
+      .subscribe(() => {
+        this.loadData(this.pagination().current_page);
+      });
+  }
+
+  applyBulkRole() {
+    const ids = this.selectedUserIds();
+    if (!ids.length) return;
+
+    this.bulkLoading.set(true);
+    forkJoin(ids.map((id) => this.userApi.updateUser(id, { role: this.bulkRole() })))
+      .pipe(finalize(() => this.bulkLoading.set(false)))
+      .subscribe(() => {
+        this.loadData(this.pagination().current_page);
+      });
   }
 }

@@ -9,7 +9,7 @@ import { Place } from '../../core/models/app.models';
 import { ItineraryApiService } from '../../core/services/itinerary-api.service';
 import { LocationApiService } from '../../core/services/location-api.service';
 import { DataService } from '../../core/services/data.service';
-import { Subject, debounceTime, distinctUntilChanged, switchMap, of, catchError } from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged, switchMap, of, catchError, finalize } from 'rxjs';
 
 type StopCategory = 'food' | 'sightseeing' | 'hotel' | 'shopping';
 
@@ -87,6 +87,8 @@ export class Planner implements AfterViewInit, OnDestroy {
   readonly saveLabel = computed(() => (this.isCreateMode() ? 'Tao chuyen di' : 'Luu chuyen di'));
   loadingItinerary = signal(false);
   saving = signal(false);
+  formErrors = signal<Record<string, string[]>>({});
+  generalError = signal<string | null>(null);
 
   tripTitle = signal('Chuyến đi cuối tuần');
   tripDescription = signal('Hẹn hò nhẹ nhàng, thêm vài điểm chill và một bữa brunch đẹp.');
@@ -253,11 +255,38 @@ export class Planner implements AfterViewInit, OnDestroy {
     const file = input.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.coverPreviewUrl.set(String(reader.result ?? ''));
-    };
-    reader.readAsDataURL(file);
+    this.compressImage(file, 1200, 0.7).then((compressed) => {
+      this.coverPreviewUrl.set(compressed);
+    });
+  }
+
+  private compressImage(file: File, maxWidth: number, quality: number): Promise<string> {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = String(e.target?.result ?? '');
+      };
+      reader.readAsDataURL(file);
+    });
   }
 
   // ── Invite ──
@@ -523,18 +552,23 @@ export class Planner implements AfterViewInit, OnDestroy {
       : this.itineraryApi.updateItinerary(this.itineraryId() as number, payload);
 
     request$
-      .pipe(
-        catchError(() => {
+      .pipe(finalize(() => this.saving.set(false)))
+      .subscribe({
+        next: (result: any) => {
           this.saving.set(false);
-          return of(null);
-        }),
-      )
-      .subscribe((result) => {
-        this.saving.set(false);
-        if (!result) return;
-
-        this.itineraryId.set(result.id);
-        this.router.navigate(['/planner', result.id, 'edit']);
+          if (!result) return;
+          this.itineraryId.set(result.id);
+          this.router.navigate(['/planner', result.id, 'edit']);
+        },
+        error: (err) => {
+          this.saving.set(false);
+          console.error('Save Trip Error:', err);
+          this.generalError.set(err.error?.message || 'Có lỗi xảy ra khi lưu lịch trình.');
+          if (err.error?.errors) {
+            this.formErrors.set(err.error.errors);
+            console.table(err.error.errors); // Log validation errors from Laravel-style response
+          }
+        },
       });
   }
 
@@ -618,8 +652,8 @@ export class Planner implements AfterViewInit, OnDestroy {
             name: item.activity_title || item.location?.name || `Diem dung ${index + 1}`,
             district: item.location?.full_address || '',
             image: this.coverPreviewUrl() || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=300',
-            startTime: item.start_time || '09:00',
-            endTime: item.end_time || '10:00',
+            startTime: this.formatTimeForDisplay(item.start_time) || '09:00',
+            endTime: this.formatTimeForDisplay(item.end_time) || '10:00',
             note: item.note || '',
             category: 'sightseeing',
             cost: Number(item.estimated_cost || 0),
@@ -636,7 +670,7 @@ export class Planner implements AfterViewInit, OnDestroy {
     return {
       title: this.tripTitle().trim(),
       description: this.tripDescription().trim() || null,
-      cover_image: this.coverPreviewUrl() || null,
+      cover_image: this.coverPreviewUrl()?.startsWith('data:') ? this.coverPreviewUrl() : null, // Only send if it is a new base64 image
       itinerary_type: 'manual' as const,
       start_date: this.startDate() || null,
       end_date: this.endDate() || null,
@@ -646,12 +680,12 @@ export class Planner implements AfterViewInit, OnDestroy {
         id: member.id,
         name: member.name,
         avatar: member.avatar,
-        is_online: member.isOnline,
+        is_online: (member.isOnline ? 1 : 0) as any,
       })),
       items: this.stops().map((stop, index) => ({
         day_number: stop.dayNumber,
-        start_time: stop.startTime || null,
-        end_time: stop.endTime || null,
+        start_time: this.formatTimeForBackend(stop.startTime) || null,
+        end_time: this.formatTimeForBackend(stop.endTime) || null,
         location_id: null,
         activity_title: stop.name,
         activity_type: stop.category,
@@ -770,6 +804,18 @@ export class Planner implements AfterViewInit, OnDestroy {
     if (cats.some((c) => c.includes('restaurant') || c.includes('cafe') || c.includes('coffee'))) return 'food';
     if (cats.some((c) => c.includes('shop') || c.includes('store') || c.includes('market'))) return 'shopping';
     return 'sightseeing';
+  }
+
+  private formatTimeForBackend(time: string | null): string | null {
+    if (!time) return null;
+    // Ensure format HH:mm (truncate seconds if present)
+    return time.split(':').slice(0, 2).join(':');
+  }
+
+  private formatTimeForDisplay(time: string | null): string | null {
+    if (!time) return null;
+    // Ensure format HH:mm
+    return time.split(':').slice(0, 2).join(':');
   }
 }
 

@@ -33,6 +33,14 @@
     <span>Vui lòng nhập tên chuyến đi trước khi lưu.</span>
   </div>
 
+  <!-- General Error Alert -->
+  <div
+    *ngIf="generalError()"
+    class="mb-6 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-medium text-red-600 shadow-sm">
+    <i class="fa-solid fa-circle-exclamation"></i>
+    <span>{{ generalError() }}</span>
+  </div>
+
   <div class="mx-auto flex max-w-7xl flex-col gap-8 lg:flex-row">
     <div class="flex-1 space-y-6 md:space-y-10">
       <section

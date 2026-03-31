@@ -1,5 +1,11 @@
 <div class="admin-page">
   <app-admin-header title="Quản lý địa điểm" breadcrumb="Địa điểm">
+    <button (click)="exportCsv()" [disabled]="!filteredPlaces().length" class="btn-outline">
+      <i class="fa-solid fa-file-csv"></i> Export CSV
+    </button>
+    <button (click)="exportJson()" [disabled]="!filteredPlaces().length" class="btn-outline">
+      <i class="fa-solid fa-file-code"></i> Export JSON
+    </button>
     <button (click)="loadData(1)" class="btn-outline">
       <i [class]="loading() ? 'fa-solid fa-spinner animate-spin' : 'fa-solid fa-arrows-rotate'"></i> Làm mới
     </button>

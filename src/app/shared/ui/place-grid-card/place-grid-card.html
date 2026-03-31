@@ -1,0 +1,50 @@
+<a
+  [routerLink]="['/detail', place().slug]"
+  class="suggested-card group relative flex h-full flex-col gap-3 rounded-[1.35rem] border border-transparent bg-white p-3 shadow-sm transition hover:border-slate-100 hover:shadow-lg sm:gap-4 sm:rounded-3xl sm:p-4">
+  <button
+    type="button"
+    (click)="onFavoriteClick($event)"
+    class="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/55 text-sm backdrop-blur-sm transition sm:right-6 sm:top-6 sm:h-9 sm:w-9"
+    [class]="isFavorite() ? 'text-rose-500' : 'hover:text-rose-500'">
+    <i class="fa-solid fa-heart"></i>
+  </button>
+
+  <img
+    [src]="place().image"
+    [alt]="place().name"
+    class="h-28 w-full rounded-[1rem] object-cover sm:h-52 sm:rounded-2xl" />
+
+  <div class="absolute left-4 top-4 z-10 sm:left-6 sm:top-6">
+    <span
+      class="flex items-center gap-1 rounded-full bg-white/55 px-2 py-1 text-[11px] font-semibold text-orange-500 backdrop-blur sm:rounded-lg sm:px-2.5 sm:text-sm">
+      <i class="fa-solid fa-star text-[10px] sm:text-xs"></i>
+      {{ place().rating }}
+    </span>
+  </div>
+
+  <div class="flex flex-1 flex-col">
+    <h3
+      class="mb-1 mt-0.5 line-clamp-2 text-[0.95rem] font-bold leading-snug text-slate-800 transition group-hover:text-primary sm:mt-1 sm:text-lg sm:leading-tight">
+      {{ place().name }}
+    </h3>
+
+    <p
+      class="mb-2 line-clamp-2 text-xs text-slate-500 sm:mb-3 sm:line-clamp-1 sm:text-sm">
+      <i class="fa-solid fa-location-dot mr-1 text-slate-400"></i>
+      {{ place().address }}
+    </p>
+
+    <p class="mb-2 text-xs text-slate-500 sm:mb-3 sm:text-sm">
+      <i class="fa-regular fa-clock mr-1 text-slate-400"></i>
+      {{ suggestedHours() }}
+    </p>
+
+    <div class="mt-auto flex flex-wrap gap-1.5 sm:gap-2">
+      <span
+        *ngFor="let label of visibleCategoryLabels()"
+        class="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600 sm:rounded-lg sm:px-2.5 sm:text-xs">
+        {{ label }}
+      </span>
+    </div>
+  </div>
+</a>

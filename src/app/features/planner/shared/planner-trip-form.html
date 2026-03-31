@@ -1,0 +1,83 @@
+<section class="custom-shadow rounded-[32px] border border-white bg-white p-4 md:p-8">
+  <div class="mb-6">
+    <h2 class="text-xl font-black text-slate-800 md:text-2xl">{{ heading() }}</h2>
+    <p class="mt-2 max-w-2xl text-sm text-slate-500">
+      {{ descriptionHint() }}
+    </p>
+  </div>
+
+  <div
+    class="group relative mb-6 h-48 w-full cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed border-slate-200 bg-slate-100 transition hover:border-primary md:h-72 md:rounded-[24px]">
+    <img *ngIf="coverPreviewUrl()" [src]="coverPreviewUrl()" class="absolute inset-0 h-full w-full object-cover" />
+    <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-400"
+      [class.hidden]="coverPreviewUrl()">
+      <i class="fa-solid fa-image mb-2 text-2xl"></i>
+      <span class="text-xs font-medium md:text-sm">Chọn ảnh bìa cho chuyến đi</span>
+    </div>
+    <input type="file" class="absolute inset-0 cursor-pointer opacity-0" (change)="onCoverSelected($event)" />
+  </div>
+
+  <div class="space-y-4">
+    <input type="text" [ngModel]="title()" (ngModelChange)="titleChange.emit($event)"
+      placeholder="Tên chuyến đi của bạn..."
+      class="w-full bg-transparent text-xl font-black text-slate-800 outline-none placeholder:text-slate-200 md:text-2xl"
+      [class.ring-2]="showTitleWarning()" [class.ring-red-400]="showTitleWarning()"
+      [class.rounded-lg]="showTitleWarning()" />
+    <textarea [ngModel]="description()" (ngModelChange)="descriptionChange.emit($event)"
+      placeholder="Viết mô tả ngắn gọn về chuyến đi này"
+      class="min-h-[60px] w-full resize-none bg-transparent text-sm text-slate-500 outline-none md:text-lg"
+      rows="2"></textarea>
+
+    <div class="flex flex-col gap-3 sm:flex-row">
+      <button type="button" (click)="openDatePicker()"
+        class="planner-date-trigger flex flex-1 items-center gap-3 rounded-2xl bg-slate-50 p-3 text-left transition hover:bg-slate-100">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <i class="fa-regular fa-calendar-days text-sm"></i>
+        </span>
+        <div class="min-w-0 flex-1">
+          <span class="ai-label block text-[10px] font-bold text-slate-400">
+            Ngày đi
+          </span>
+          <span class="block truncate text-sm font-medium text-slate-700">{{ dateRangeLabel() }}</span>
+        </div>
+        <i class="fa-solid fa-chevron-down text-xs text-slate-400"></i>
+      </button>
+
+      <div *ngIf="tripDays() > 0" class="flex items-center justify-center gap-2 rounded-2xl bg-primary/10 px-4 py-3">
+        <i class="fa-solid fa-moon text-sm text-primary"></i>
+        <span class="text-sm font-black text-primary">{{ tripDays() }} ngày</span>
+      </div>
+    </div>
+
+    <input #dateRangeInput type="text" class="planner-date-input sr-only" aria-label="Chon khoang ngay" />
+
+    <div class="hidden flex-col gap-3 sm:flex-row">
+      <div class="flex flex-1 items-center gap-3 rounded-xl bg-slate-50 p-3">
+        <i class="fa-regular fa-calendar text-sm text-primary"></i>
+        <div class="flex-1">
+          <label class="ai-label block text-[10px] font-bold text-slate-400">
+            Ngày bắt đầu
+          </label>
+          <input type="date" [ngModel]="startDate()" (ngModelChange)="startDateChange.emit($event)"
+            class="w-full bg-transparent text-xs font-bold text-slate-700 outline-none" />
+        </div>
+      </div>
+
+      <div class="flex flex-1 items-center gap-3 rounded-xl bg-slate-50 p-3">
+        <i class="fa-regular fa-calendar-check text-sm text-primary"></i>
+        <div class="flex-1">
+          <label class="ai-label block text-[10px] font-bold text-slate-400">
+            Ngày kết thúc
+          </label>
+          <input type="date" [ngModel]="endDate()" (ngModelChange)="endDateChange.emit($event)"
+            class="w-full bg-transparent text-xs font-bold text-slate-700 outline-none" />
+        </div>
+      </div>
+
+      <div *ngIf="tripDays() > 0" class="flex items-center justify-center gap-2 rounded-xl bg-primary/10 px-4 py-3">
+        <i class="fa-solid fa-moon text-sm text-primary"></i>
+        <span class="text-sm font-black text-primary">{{ tripDays() }} ngày</span>
+      </div>
+    </div>
+  </div>
+</section>

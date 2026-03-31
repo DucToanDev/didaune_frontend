@@ -15,6 +15,7 @@ import { Router, RouterModule } from '@angular/router';
 import { Place } from '../../core/models/app.models';
 import { CATEGORY_CONFIG } from '../../core/config/place-taxonomy.config';
 import { DataService } from '../../core/services/data.service';
+import { calculateDistanceKm } from '../../core/utils/geo.utils';
 
 declare global {
   interface Window {
@@ -198,7 +199,7 @@ export class MapPage implements AfterViewInit {
         return false;
       }
 
-      const distanceKm = this.calculateDistanceKm(
+      const distanceKm = calculateDistanceKm(
         coordinates.lat,
         coordinates.lng,
         place.latitude,
@@ -310,7 +311,7 @@ export class MapPage implements AfterViewInit {
         continue;
       }
 
-      const distanceKm = this.calculateDistanceKm(
+      const distanceKm = calculateDistanceKm(
         coordinates.lat,
         coordinates.lng,
         place.latitude,
@@ -902,29 +903,9 @@ export class MapPage implements AfterViewInit {
     }
   }
 
-  private calculateDistanceKm(
-    fromLat: number,
-    fromLng: number,
-    toLat: number,
-    toLng: number,
-  ): number {
-    const earthRadiusKm = 6371;
-    const dLat = this.toRadians(toLat - fromLat);
-    const dLng = this.toRadians(toLng - fromLng);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRadians(fromLat)) *
-        Math.cos(this.toRadians(toLat)) *
-        Math.sin(dLng / 2) *
-        Math.sin(dLng / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-    return earthRadiusKm * c;
-  }
 
-  private toRadians(value: number): number {
-    return (value * Math.PI) / 180;
-  }
+
 
   private async ensureLeafletLoaded(): Promise<void> {
     if (window.L) {

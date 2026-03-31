@@ -19,7 +19,7 @@ export class Tabbar {
     }
 
     event.preventDefault();
-    this.dataService.requestAuthModal('login');
+    this.dataService.requestProtectedAuthModal('login');
   }
 
   openFavoriteOrAuth(event: Event) {
@@ -28,6 +28,6 @@ export class Tabbar {
     }
 
     event.preventDefault();
-    this.dataService.requestAuthModal('login');
+    this.dataService.requestProtectedAuthModal('login');
   }
 }

@@ -132,4 +132,49 @@ export class AdminLocations implements OnInit {
     // Backend doesn't have DELETE /locations — just remove from list locally
     this.places.update(list => list.filter(p => p.id !== place.id));
   }
+
+  exportCsv() {
+    const header = ['id', 'name', 'address', 'district', 'city', 'categories', 'rating', 'review_count', 'owner_name', 'status', 'latitude', 'longitude'];
+    const rows = this.filteredPlaces().map((place) => [
+      place.id,
+      place.name,
+      place.address,
+      place.district_name,
+      place.city_name,
+      place.category_labels.join(', '),
+      place.rating,
+      place.review_count,
+      place.owner_name ?? '',
+      place.status,
+      place.latitude ?? '',
+      place.longitude ?? '',
+    ]);
+    const csv = [header, ...rows]
+      .map((row) =>
+        row
+          .map((value) => `"${String(value ?? '').replace(/"/g, '""')}"`)
+          .join(','),
+      )
+      .join('\n');
+
+    this.downloadFile(csv, 'admin-locations.csv', 'text/csv;charset=utf-8');
+  }
+
+  exportJson() {
+    this.downloadFile(
+      JSON.stringify(this.filteredPlaces(), null, 2),
+      'admin-locations.json',
+      'application/json;charset=utf-8',
+    );
+  }
+
+  private downloadFile(content: string, fileName: string, mimeType: string) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
 }

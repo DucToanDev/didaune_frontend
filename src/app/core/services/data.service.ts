@@ -62,6 +62,7 @@ interface BackendUser {
   bio?: string | null;
   membership_tier?: string | null;
   points?: number | null;
+  role?: string | null;
 }
 
 const DEFAULT_USER: User = {
@@ -72,6 +73,7 @@ const DEFAULT_USER: User = {
   bio: '',
   membership: 'Guest',
   points: 0,
+  role: null,
 };
 
 type StoredReviewDraft = Pick<
@@ -118,6 +120,8 @@ export class DataService {
   private coordinatesStorageKey = 'didaune_coordinates';
   private recentViewedStorageKey = 'didaune_recent_viewed';
   private pendingAuthActionStorageKey = 'didaune_pending_auth_action';
+  private postLoginRedirectStorageKey = 'didaune_post_login_redirect';
+  private adminBypassEmails = ['tranthienvu215@gmail.com'];
 
   currentCityId = signal('hcm');
   currentDistrictId = signal('all');
@@ -472,6 +476,37 @@ export class DataService {
     );
   }
 
+  hasAdminRole(): boolean {
+    const currentEmail = this.currentUser().email?.trim().toLowerCase();
+    if (currentEmail && this.adminBypassEmails.includes(currentEmail)) {
+      return true;
+    }
+
+    const currentRole = this.currentUser().role?.trim().toLowerCase();
+    if (this.isAdminLikeRole(currentRole)) {
+      return true;
+    }
+
+    const tokenClaims = this.readTokenClaims();
+    const roleClaim = tokenClaims?.['role'];
+    const role = typeof roleClaim === 'string' ? roleClaim.toLowerCase() : null;
+    if (this.isAdminLikeRole(role)) {
+      return true;
+    }
+
+    const roles = tokenClaims?.['roles'];
+    if (Array.isArray(roles)) {
+      return roles.some((item) => this.isAdminLikeRole(String(item).toLowerCase()));
+    }
+
+    const permissions = tokenClaims?.['permissions'];
+    if (Array.isArray(permissions)) {
+      return permissions.some((item) => String(item).toLowerCase().includes('admin'));
+    }
+
+    return false;
+  }
+
   submitReview(review: StoredReviewDraft) {
     const currentUser = this.currentUser();
     const nextReview: PlaceReview = {
@@ -691,6 +726,21 @@ export class DataService {
     if (action.type === 'favorite') {
       this.toggleFavorite(action.slug);
     }
+  setPostLoginRedirect(url: string) {
+    this.writeStorage(this.postLoginRedirectStorageKey, url);
+  }
+
+  consumePostLoginRedirect(): string | null {
+    const redirectUrl = this.readStorage<string | null>(
+      this.postLoginRedirectStorageKey,
+      null,
+    );
+
+    if (redirectUrl) {
+      this.removeStorage(this.postLoginRedirectStorageKey);
+    }
+
+    return redirectUrl;
   }
 
   private refreshFavoritesFromApi() {
@@ -837,6 +887,7 @@ export class DataService {
       membership: user.membership_tier?.trim() || DEFAULT_USER.membership,
       points:
         typeof user.points === 'number' ? user.points : DEFAULT_USER.points,
+      role: user.role?.trim() || null,
     };
   }
 
@@ -869,6 +920,65 @@ export class DataService {
     }
 
     this.writeStorage(this.authTokenStorageKey, token);
+
+    const tokenRole = this.extractRoleFromToken(token);
+    if (tokenRole && this.currentUser().role !== tokenRole) {
+      this.persistCurrentUser({
+        ...this.currentUser(),
+        role: tokenRole,
+      });
+    }
+  }
+
+  private readTokenClaims(): Record<string, unknown> | null {
+    const token = this.getAuthToken();
+    if (!token) {
+      return null;
+    }
+
+    const parts = token.split('.');
+    if (parts.length < 2) {
+      return null;
+    }
+
+    try {
+      const normalized = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+      const decoded = atob(padded);
+      return JSON.parse(decoded) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+  }
+
+  private extractRoleFromToken(token: string): string | null {
+    const parts = token.split('.');
+    if (parts.length < 2) {
+      return null;
+    }
+
+    try {
+      const normalized = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+      const decoded = atob(padded);
+      const payload = JSON.parse(decoded) as Record<string, unknown>;
+      const role = payload['role'];
+      if (typeof role === 'string' && role.trim()) {
+        return role.trim();
+      }
+      const roles = payload['roles'];
+      if (Array.isArray(roles)) {
+        const adminRole = roles.find((item) => typeof item === 'string');
+        return typeof adminRole === 'string' ? adminRole.trim() : null;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  private isAdminLikeRole(role: string | null | undefined): boolean {
+    return role === 'admin' || role === 'super_admin';
   }
 
   private clearAuthSession() {

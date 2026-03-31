@@ -243,6 +243,7 @@ export interface User {
   bio: string;
   membership: string;
   points: number;
+  role?: string | null;
 }
 
 export interface Review extends PlaceReview {

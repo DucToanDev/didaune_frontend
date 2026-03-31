@@ -361,6 +361,7 @@ export class Header implements OnInit {
       next: () => {
         this.dataService.resumePendingAuthAction();
         this.authModalOpen.set(false);
+        this.handlePostAuthRedirect();
       },
       error: (error) => {
         this.authError.set(
@@ -631,6 +632,7 @@ export class Header implements OnInit {
       next: () => {
         this.dataService.resumePendingAuthAction();
         this.authModalOpen.set(false);
+        this.handlePostAuthRedirect();
       },
       error: (error) => {
         this.authError.set(this.resolveAuthError(error, fallbackMessage));
@@ -656,5 +658,20 @@ export class Header implements OnInit {
     return typeof validationMessage === 'string'
       ? validationMessage
       : fallbackMessage;
+  }
+
+  private handlePostAuthRedirect() {
+    const redirectUrl = this.dataService.consumePostLoginRedirect();
+
+    if (!redirectUrl) {
+      return;
+    }
+
+    if (redirectUrl.startsWith('/admin') && !this.dataService.hasAdminRole()) {
+      this.authError.set('Tài khoản của bạn chưa có quyền vào khu vực admin.');
+      return;
+    }
+
+    this.router.navigateByUrl(redirectUrl);
   }
 }

@@ -30,6 +30,8 @@ import {
   catchError,
 } from 'rxjs';
 import { PlannerTripForm } from './shared/planner-trip-form';
+import { Subject, debounceTime, distinctUntilChanged, switchMap, of, catchError, finalize } from 'rxjs';
+
 type StopCategory = 'food' | 'sightseeing' | 'hotel' | 'shopping';
 
 interface PlannerStop {
@@ -102,6 +104,8 @@ export class Planner implements AfterViewInit, OnDestroy {
   );
   loadingItinerary = signal(false);
   saving = signal(false);
+  formErrors = signal<Record<string, string[]>>({});
+  generalError = signal<string | null>(null);
 
   tripTitle = signal('');
   tripDescription = signal('');
@@ -291,11 +295,38 @@ export class Planner implements AfterViewInit, OnDestroy {
     const file = input.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.coverPreviewUrl.set(String(reader.result ?? ''));
-    };
-    reader.readAsDataURL(file);
+    this.compressImage(file, 1200, 0.7).then((compressed) => {
+      this.coverPreviewUrl.set(compressed);
+    });
+  }
+
+  private compressImage(file: File, maxWidth: number, quality: number): Promise<string> {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = String(e.target?.result ?? '');
+      };
+      reader.readAsDataURL(file);
+    });
   }
 
   // -- Invite --
@@ -679,8 +710,9 @@ export class Planner implements AfterViewInit, OnDestroy {
         );
 
     request$
-      .pipe(
-        catchError(() => {
+      .pipe(finalize(() => this.saving.set(false)))
+      .subscribe({
+        next: (result: any) => {
           this.saving.set(false);
           this.toast.error('Lưu lịch trình thất bại');
           return of(null);
@@ -891,7 +923,7 @@ export class Planner implements AfterViewInit, OnDestroy {
         id: member.id,
         name: member.name,
         avatar: member.avatar,
-        is_online: member.isOnline,
+        is_online: (member.isOnline ? 1 : 0) as any,
       })),
       items: this.stops().map((stop, index) => ({
         day_number: stop.dayNumber,
@@ -1094,5 +1126,17 @@ export class Planner implements AfterViewInit, OnDestroy {
     )
       return 'shopping';
     return 'sightseeing';
+  }
+
+  private formatTimeForBackend(time: string | null): string | null {
+    if (!time) return null;
+    // Ensure format HH:mm (truncate seconds if present)
+    return time.split(':').slice(0, 2).join(':');
+  }
+
+  private formatTimeForDisplay(time: string | null): string | null {
+    if (!time) return null;
+    // Ensure format HH:mm
+    return time.split(':').slice(0, 2).join(':');
   }
 }

@@ -11,6 +11,7 @@ import { PlannerList } from './features/planner-list/planner-list';
 import { PartnerRegister } from './features/partner-register/partner-register';
 import { Profile } from './features/profile/profile';
 import { Reviews } from './features/reviews/reviews';
+import { Contact } from './features/contact/contact';
 import { DataService } from './core/services/data.service';
 import { UserShell } from './layout/user-shell';
 
@@ -69,6 +70,7 @@ export const routes: Routes = [
       { path: 'detail/:slug', component: Detail, title: 'Chi tiết' },
       { path: 'profile', component: Profile, title: 'Hồ sơ', canActivate: [requireAuth] },
       { path: 'reviews/:slug', component: Reviews, title: 'Đánh giá' },
+      { path: 'contact', component: Contact, title: 'Liên hệ' },
     ],
   },
   { path: '**', redirectTo: '' },

@@ -1,0 +1,140 @@
+<p-toast position="top-right" />
+
+<div class="h-[calc(100vh-5rem)] bg-slate-50 flex items-center justify-center px-8 overflow-hidden">
+  <div class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+    <!-- Info Cards -->
+    <div class="flex flex-col gap-3">
+      <div class="mb-1">
+        <h1 class="text-xl font-bold text-slate-900">Liên hệ với chúng tôi</h1>
+        <p class="text-slate-500 text-sm mt-1">Chúng tôi luôn sẵn sàng lắng nghe bạn.</p>
+      </div>
+
+      <div class="bg-white rounded-2xl p-4 shadow-theme-sm border border-slate-100 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-location-dot text-primary text-sm"></i>
+        </div>
+        <div>
+          <p class="font-semibold text-slate-800 text-sm">Địa chỉ</p>
+          <p class="text-slate-500 text-xs">TP. Hồ Chí Minh, Việt Nam</p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-4 shadow-theme-sm border border-slate-100 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-envelope text-primary text-sm"></i>
+        </div>
+        <div>
+          <p class="font-semibold text-slate-800 text-sm">Email</p>
+          <p class="text-slate-500 text-xs">hello&#64;didaune.vn</p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-4 shadow-theme-sm border border-slate-100 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-clock text-primary text-sm"></i>
+        </div>
+        <div>
+          <p class="font-semibold text-slate-800 text-sm">Giờ hỗ trợ</p>
+          <p class="text-slate-500 text-xs">Thứ 2 – Thứ 6, 8:00 – 17:00</p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-4 shadow-theme-sm border border-slate-100">
+        <p class="font-semibold text-slate-800 text-sm mb-2">Theo dõi chúng tôi</p>
+        <div class="flex gap-2">
+          <a href="#" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-orange-100 flex items-center justify-center transition-colors">
+            <i class="fa-brands fa-facebook-f text-slate-600 text-xs"></i>
+          </a>
+          <a href="#" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-orange-100 flex items-center justify-center transition-colors">
+            <i class="fa-brands fa-instagram text-slate-600 text-xs"></i>
+          </a>
+          <a href="#" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-orange-100 flex items-center justify-center transition-colors">
+            <i class="fa-brands fa-tiktok text-slate-600 text-xs"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <div class="lg:col-span-2">
+      <div class="bg-white rounded-2xl shadow-theme-sm border border-slate-100 p-6">
+
+        @if (submitted()) {
+          <div class="text-center py-8">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 mb-3">
+              <i class="fa-solid fa-check text-lg text-green-600"></i>
+            </div>
+            <h2 class="text-lg font-bold text-slate-900 mb-1">Đã gửi thành công!</h2>
+            <p class="text-slate-500 text-sm mb-4">Chúng tôi sẽ phản hồi trong vòng 24 giờ.</p>
+            <p-button label="Gửi tin nhắn khác" [outlined]="true" severity="secondary" (onClick)="resetForm()" />
+          </div>
+        }
+
+        @if (!submitted()) {
+          <h2 class="text-lg font-bold text-slate-900 mb-4">Gửi tin nhắn</h2>
+
+          <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-4">
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-slate-700">Họ và tên <span class="text-red-500">*</span></label>
+                <input pInputText formControlName="name" placeholder="Nguyễn Văn A" class="w-full"
+                  [class.ng-invalid]="name.invalid && name.touched" [class.ng-dirty]="name.touched" />
+                @if (name.invalid && name.touched) {
+                  <small class="text-red-500 text-xs">
+                    @if (name.errors?.['required']) { Vui lòng nhập họ tên. }
+                    @if (name.errors?.['minlength']) { Tối thiểu 2 ký tự. }
+                  </small>
+                }
+              </div>
+
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-slate-700">Email <span class="text-red-500">*</span></label>
+                <input pInputText formControlName="email" placeholder="example@email.com" type="email" class="w-full"
+                  [class.ng-invalid]="email.invalid && email.touched" [class.ng-dirty]="email.touched" />
+                @if (email.invalid && email.touched) {
+                  <small class="text-red-500 text-xs">
+                    @if (email.errors?.['required']) { Vui lòng nhập email. }
+                    @if (email.errors?.['email']) { Email không hợp lệ. }
+                  </small>
+                }
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-sm font-medium text-slate-700">Chủ đề <span class="text-red-500">*</span></label>
+              <p-select formControlName="topic" [options]="topics" optionLabel="label" optionValue="value"
+                placeholder="Chọn chủ đề..." styleClass="w-full"
+                [class.ng-invalid]="topic.invalid && topic.touched" />
+              @if (topic.invalid && topic.touched) {
+                <small class="text-red-500 text-xs">Vui lòng chọn chủ đề.</small>
+              }
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-sm font-medium text-slate-700">Nội dung <span class="text-red-500">*</span></label>
+              <textarea pTextarea formControlName="message" placeholder="Nhập nội dung tin nhắn của bạn..."
+                rows="4" class="w-full resize-none"
+                [class.ng-invalid]="message.invalid && message.touched"
+                [class.ng-dirty]="message.touched"></textarea>
+              @if (message.invalid && message.touched) {
+                <small class="text-red-500 text-xs">
+                  @if (message.errors?.['required']) { Vui lòng nhập nội dung. }
+                  @if (message.errors?.['minlength']) { Tối thiểu 10 ký tự. }
+                </small>
+              }
+            </div>
+
+            <div class="flex justify-end">
+              <p-button type="submit" label="Gửi tin nhắn" [loading]="submitting()" [disabled]="submitting()" />
+            </div>
+
+          </form>
+        }
+
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -726,6 +726,8 @@ export class DataService {
     if (action.type === 'favorite') {
       this.toggleFavorite(action.slug);
     }
+  }
+
   setPostLoginRedirect(url: string) {
     this.writeStorage(this.postLoginRedirectStorageKey, url);
   }

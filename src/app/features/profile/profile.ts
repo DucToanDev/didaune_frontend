@@ -6,6 +6,7 @@ import { catchError, finalize, of } from 'rxjs';
 import { User } from '../../core/models/app.models';
 import { BACKEND_API_CONFIG } from '../../core/config/backend-api.config';
 import { DataService } from '../../core/services/data.service';
+import { SeoService } from '../../core/services/seo.service';
 import {
   AdminItinerary,
   ItineraryApiService,
@@ -59,6 +60,7 @@ export class Profile implements OnInit {
   private locationSubmissionApi = inject(LocationSubmissionApiService);
   private userApi = inject(UserApiService);
   private toast = inject(ToastService);
+  private seo = inject(SeoService);
   private readonly backendOrigin = BACKEND_API_CONFIG.baseUrl.replace(/\/api$/, '');
 
   user = computed<User>(() => this.dataService.currentUser());
@@ -197,6 +199,13 @@ export class Profile implements OnInit {
   );
 
   constructor() {
+    this.seo.setPage({
+      title: 'Hồ sơ',
+      description: 'Quản lý thông tin và hoạt động tài khoản.',
+      path: '/profile',
+      noindex: true,
+    });
+
     effect(() => {
       const user = this.user();
 

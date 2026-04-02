@@ -7,6 +7,7 @@ import { ItineraryApiService } from '../../core/services/itinerary-api.service';
 import { DataService } from '../../core/services/data.service';
 import { PlannerTripForm } from '../planner/shared/planner-trip-form';
 import { ToastService } from '../../core/services/toast.service';
+import { SeoService } from '../../core/services/seo.service';
 
 @Component({
   selector: 'app-planner-create-ai',
@@ -108,6 +109,7 @@ export class PlannerCreateAi {
   private dataService = inject(DataService);
   private router = inject(Router);
   private toast = inject(ToastService);
+  private seo = inject(SeoService);
 
   saving = signal(false);
   showTitleWarning = signal(false);
@@ -141,6 +143,12 @@ export class PlannerCreateAi {
   });
 
   constructor() {
+    this.seo.setPage({
+      title: 'Tao lich trinh AI',
+      description: 'Tao lich trinh bang AI theo so thich cua ban.',
+      path: '/planner/new/ai',
+      noindex: true,
+    });
     this.restoreDraft();
   }
 

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { Place } from '../../core/models/app.models';
 import { DataService } from '../../core/services/data.service';
+import { SeoService } from '../../core/services/seo.service';
 
 @Component({
   selector: 'app-favorite',
@@ -13,6 +14,7 @@ import { DataService } from '../../core/services/data.service';
 })
 export class Favorite {
   public dataService = inject(DataService);
+  private seo = inject(SeoService);
 
   favorites = signal<Place[]>([]);
 
@@ -29,6 +31,12 @@ export class Favorite {
   });
 
   constructor() {
+    this.seo.setPage({
+      title: 'Yêu thích',
+      description: 'Danh sách địa điểm bạn đã lưu.',
+      path: '/favorite',
+      noindex: true,
+    });
     this.dataService.getFavoritePlaces().subscribe((favorites) => this.favorites.set(favorites));
   }
 

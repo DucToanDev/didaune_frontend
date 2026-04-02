@@ -14,12 +14,8 @@
     <h2 class="text-xl font-black text-slate-900">Trải nghiệm của bạn thế nào?</h2>
     <p class="mt-2 text-sm text-slate-500">Chấm số sao và thêm vài nhận xét ngắn để lưu lại cảm nhận.</p>
     <div class="mt-6 flex justify-center gap-2 text-4xl">
-      <button
-        *ngFor="let star of [1, 2, 3, 4, 5]"
-        type="button"
-        (click)="setRating(star)"
-        [class]="star <= rating() ? 'text-orange-400' : 'text-slate-200'"
-      >
+      <button *ngFor="let star of [1, 2, 3, 4, 5]" type="button" (click)="setRating(star)"
+        [class]="star <= rating() ? 'text-orange-400' : 'text-slate-200'">
         <i class="fa-solid fa-star"></i>
       </button>
     </div>
@@ -27,42 +23,29 @@
 
   <div class="mb-6 rounded-[30px] border border-slate-100 bg-white p-6 shadow-sm">
     <label class="mb-3 block text-sm font-bold text-slate-800">Chia sẻ chi tiết</label>
-    <textarea
-      rows="5"
-      [ngModel]="comment()"
-      (ngModelChange)="comment.set($event)"
+    <textarea rows="5" [ngModel]="comment()" (ngModelChange)="comment.set($event)"
       placeholder="Đồ uống, không gian, phục vụ, chỗ ngồi làm việc... có gì hay thì viết ở đây."
-      class="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 outline-none"
-    ></textarea>
+      class="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 outline-none"></textarea>
   </div>
 
   <div class="mb-8 rounded-[30px] border border-slate-100 bg-white p-6 shadow-sm">
     <label class="mb-4 block text-sm font-bold text-slate-800">Chọn nhanh điểm cộng</label>
     <div class="flex flex-wrap gap-2">
-      <button
-        *ngFor="let tag of quickTags"
-        type="button"
-        (click)="toggleTag(tag)"
+      <button *ngFor="let tag of quickTags" type="button" (click)="toggleTag(tag)"
         [class]="selectedTags().includes(tag) ? 'bg-primary text-white border-primary' : 'bg-white text-slate-600 border-slate-200'"
-        class="rounded-full border px-4 py-2 text-sm font-medium transition"
-      >
+        class="rounded-full border px-4 py-2 text-sm font-medium transition">
         {{ tag }}
       </button>
     </div>
   </div>
 
   <div class="flex gap-3">
-    <button
-      type="button"
-      (click)="submit()"
-      class="flex-1 rounded-2xl bg-primary px-5 py-4 text-sm font-bold text-white shadow-lg"
-    >
+    <button type="button" (click)="submit()"
+      class="flex-1 rounded-2xl bg-primary px-5 py-4 text-sm font-bold text-white shadow-lg">
       Gửi bài đánh giá
     </button>
-    <a
-      [routerLink]="['/detail', place.slug]"
-      class="rounded-2xl border border-slate-200 px-5 py-4 text-sm font-bold text-slate-700"
-    >
+    <a [routerLink]="['/detail', place.slug]"
+      class="rounded-2xl border border-slate-200 px-5 py-4 text-sm font-bold text-slate-700">
       Quay lại
     </a>
   </div>

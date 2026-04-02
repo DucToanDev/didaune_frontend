@@ -2,15 +2,9 @@
   <app-header />
 </header>
 <div class="flex min-h-screen pt-20">
-  <div
-    class="fixed inset-0 z-[95] bg-slate-900/40 backdrop-blur-[1px] md:hidden"
-    [class.hidden]="!mobileSidebarOpen()"
-    [attr.aria-hidden]="!mobileSidebarOpen()"
-    (click)="closeMobileSidebar()"></div>
-  <button
-    type="button"
-    (click)="closeMobileSidebar()"
-    [class.hidden]="!mobileSidebarOpen()"
+  <div class="fixed inset-0 z-[95] bg-slate-900/40 backdrop-blur-[1px] md:hidden" [class.hidden]="!mobileSidebarOpen()"
+    [attr.aria-hidden]="!mobileSidebarOpen()" (click)="closeMobileSidebar()"></div>
+  <button type="button" (click)="closeMobileSidebar()" [class.hidden]="!mobileSidebarOpen()"
     [attr.aria-hidden]="!mobileSidebarOpen()"
     class="fixed right-4 top-4 z-[97] flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow-lg md:hidden">
     <i class="fa-solid fa-xmark"></i>

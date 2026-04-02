@@ -11,6 +11,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { PaginationMeta } from '../../core/models/app.models';
 import { Pagination } from '../../admin/shared/pagination/pagination';
 import { DataService } from '../../core/services/data.service';
+import { SeoService } from '../../core/services/seo.service';
 
 interface PlannerListItem {
   id: string;
@@ -32,6 +33,7 @@ export class PlannerList {
   private itineraryApi = inject(ItineraryApiService);
   private toast = inject(ToastService);
   readonly dataService = inject(DataService);
+  private seo = inject(SeoService);
   private readonly perPage = 8;
 
   loading = signal(true);
@@ -48,6 +50,13 @@ export class PlannerList {
   tripCountLabel = computed(() => `${this.trips().length} ban luu`);
 
   constructor() {
+    this.seo.setPage({
+      title: 'Lịch trình',
+      description: 'Danh sách lịch trình của bạn.',
+      path: '/planner',
+      noindex: true,
+    });
+
     if (!this.dataService.isAuthenticated()) {
       this.loading.set(false);
       return;

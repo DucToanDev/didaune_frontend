@@ -3,6 +3,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize, forkJoin } from 'rxjs';
 import { PaginationMeta } from '../../core/models/app.models';
+import { DataService } from '../../core/services/data.service';
 import { AdminUser, UserApiService } from '../../core/services/user-api.service';
 import { AdminHeader } from '../shared/admin-header/admin-header';
 
@@ -15,6 +16,7 @@ import { AdminHeader } from '../shared/admin-header/admin-header';
 })
 export class AdminUsers implements OnInit {
   private userApi = inject(UserApiService);
+  private dataService = inject(DataService);
 
   loading = signal(false);
   users = signal<AdminUser[]>([]);
@@ -122,7 +124,8 @@ export class AdminUsers implements OnInit {
         .updateUser(editing.id, updatePayload)
         .pipe(finalize(() => this.saving.set(false)))
         .subscribe({
-          next: () => {
+          next: (updatedUser) => {
+            this.syncCurrentUserIfNeeded([updatedUser.id]);
             this.showModal.set(false);
             this.loadData(this.pagination().current_page);
           },
@@ -219,7 +222,18 @@ export class AdminUsers implements OnInit {
     forkJoin(ids.map((id) => this.userApi.updateUser(id, { role: this.bulkRole() })))
       .pipe(finalize(() => this.bulkLoading.set(false)))
       .subscribe(() => {
+        this.syncCurrentUserIfNeeded(ids);
         this.loadData(this.pagination().current_page);
       });
+  }
+
+  private syncCurrentUserIfNeeded(updatedUserIds: number[]) {
+    const currentUserId = Number(this.dataService.currentUser().id);
+
+    if (!Number.isFinite(currentUserId) || !updatedUserIds.includes(currentUserId)) {
+      return;
+    }
+
+    this.dataService.refreshCurrentUser().subscribe();
   }
 }

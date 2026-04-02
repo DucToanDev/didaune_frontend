@@ -1,6 +1,15 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { EMPTY, Observable, expand, map, reduce } from 'rxjs';
+import {
+  EMPTY,
+  Observable,
+  catchError,
+  expand,
+  map,
+  reduce,
+  shareReplay,
+  throwError,
+} from 'rxjs';
 import {
   HomePageData,
   PaginatedPlacesResult,
@@ -49,6 +58,8 @@ interface BackendImportResponse {
     imported?: number;
     created?: number;
     skipped?: number;
+    batch_id?: string | null;
+    file_name?: string | null;
   } | null;
 }
 
@@ -93,7 +104,27 @@ export interface OwnerLocationSubmissionPayload {
   price_range?: string | null;
   website?: string | null;
   google_maps_link?: string | null;
+  main_image?: File | null;
+  gallery_images?: File[];
   amenities?: string[];
+}
+
+export interface UpdateLocationPayload {
+  name?: string;
+  description?: string | null;
+  main_category?: string | null;
+  full_address?: string | null;
+  ward?: string | null;
+  district?: string | null;
+  city?: string | null;
+  price_range?: string | null;
+  phone?: string | null;
+  website?: string | null;
+  google_maps_link?: string | null;
+  featured_image?: string | null;
+  status?: string | null;
+  is_temporarily_closed?: boolean;
+  is_permanently_closed?: boolean;
 }
 
 @Injectable({
@@ -103,9 +134,17 @@ export class LocationApiService {
   private http = inject(HttpClient);
   private mapper = inject(PlaceMapperService);
   private apiBaseUrl = BACKEND_API_CONFIG.baseUrl;
+  private allLocationsCache = new Map<string, Observable<Place[]>>();
 
   fetchAllLocations(cityId: string, wardCode: string): Observable<Place[]> {
-    return this.fetchLocationPage(cityId, wardCode, 1).pipe(
+    const cacheKey = `${cityId}:${wardCode}`;
+    const cached = this.allLocationsCache.get(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
+    const request$ = this.fetchLocationPage(cityId, wardCode, 1).pipe(
       expand((response) =>
         response.data.current_page < response.data.last_page
           ? this.fetchLocationPage(
@@ -127,7 +166,15 @@ export class LocationApiService {
           ),
         ),
       ),
+      shareReplay(1),
+      catchError((error) => {
+        this.allLocationsCache.delete(cacheKey);
+        return throwError(() => error);
+      }),
     );
+
+    this.allLocationsCache.set(cacheKey, request$);
+    return request$;
   }
 
   fetchLocationsPaginated(options: {
@@ -135,6 +182,7 @@ export class LocationApiService {
     search?: string;
     wardCode?: string;
     wardName?: string;
+    districtName?: string;
     areaId?: string;
     categoryId?: string;
     amenityId?: string;
@@ -147,6 +195,7 @@ export class LocationApiService {
       search = '',
       wardCode = '',
       wardName = '',
+      districtName = '',
       areaId = 'all',
       categoryId = 'all',
       amenityId = 'all',
@@ -175,7 +224,9 @@ export class LocationApiService {
       params = params.set('ward', wardName.trim());
     }
 
-    if (areaId && areaId !== 'all') {
+    if (districtName.trim()) {
+      params = params.set('district', districtName.trim());
+    } else if (areaId && areaId !== 'all') {
       params = params.set('district', areaId);
     }
 
@@ -311,23 +362,58 @@ export class LocationApiService {
 
   getPlaceById(id: string, fallbackCityId = 'hcm'): Observable<Place> {
     return this.http
-      .get<BackendApiEnvelope<BackendLocation>>(`${this.apiBaseUrl}/locations/${id}`)
+      .get<
+        BackendApiEnvelope<BackendLocation>
+      >(`${this.apiBaseUrl}/locations/${id}`)
       .pipe(
         map((response) =>
-          this.mapper.normalizeBackendLocation(response.data, 0, 1, fallbackCityId)
-        )
+          this.mapper.normalizeBackendLocation(
+            response.data,
+            0,
+            1,
+            fallbackCityId,
+          ),
+        ),
+      );
+  }
+
+  updateLocation(
+    id: string,
+    payload: UpdateLocationPayload,
+    fallbackCityId = 'hcm',
+  ): Observable<Place> {
+    return this.http
+      .patch<
+        BackendApiEnvelope<BackendLocation>
+      >(`${this.apiBaseUrl}/locations/${id}`, payload)
+      .pipe(
+        map((response) =>
+          this.mapper.normalizeBackendLocation(
+            response.data,
+            0,
+            1,
+            fallbackCityId,
+          ),
+        ),
       );
   }
 
   fetchTrendingLocations(cityId = 'hcm'): Observable<Place[]> {
     return this.http
-      .get<BackendApiEnvelope<BackendLocation[]>>(`${this.apiBaseUrl}/locations/trending`)
+      .get<
+        BackendApiEnvelope<BackendLocation[]>
+      >(`${this.apiBaseUrl}/locations/trending`)
       .pipe(
         map((response) =>
           response.data.map((location, index, source) =>
-            this.mapper.normalizeBackendLocation(location, index, source.length, cityId)
-          )
-        )
+            this.mapper.normalizeBackendLocation(
+              location,
+              index,
+              source.length,
+              cityId,
+            ),
+          ),
+        ),
       );
   }
 
@@ -335,7 +421,7 @@ export class LocationApiService {
     lat: number,
     lng: number,
     radius = 5,
-    cityId = 'hcm'
+    cityId = 'hcm',
   ): Observable<Place[]> {
     const params = new HttpParams()
       .set('lat', String(lat))
@@ -343,24 +429,58 @@ export class LocationApiService {
       .set('radius', String(radius));
 
     return this.http
-      .get<BackendApiEnvelope<BackendLocation[]>>(`${this.apiBaseUrl}/locations/nearby`, {
-        params,
-      })
+      .get<BackendApiEnvelope<BackendLocation[]>>(
+        `${this.apiBaseUrl}/locations/nearby`,
+        {
+          params,
+        },
+      )
       .pipe(
         map((response) =>
           response.data.map((location, index, source) =>
-            this.mapper.normalizeBackendLocation(location, index, source.length, cityId)
-          )
-        )
+            this.mapper.normalizeBackendLocation(
+              location,
+              index,
+              source.length,
+              cityId,
+            ),
+          ),
+        ),
       );
   }
 
-  importLocations(file: File, truncate = false): Observable<BackendImportResponse> {
+  importLocations(
+    file: File,
+    truncate = false,
+  ): Observable<BackendImportResponse> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('truncate', truncate ? 'true' : 'false');
 
-    return this.http.post<BackendImportResponse>(`${this.apiBaseUrl}/locations/import`, formData);
+    return this.http.post<BackendImportResponse>(
+      `${this.apiBaseUrl}/locations/import`,
+      formData,
+    );
+  }
+
+  deleteLocation(
+    id: string,
+  ): Observable<{ success: boolean; message: string }> {
+    return this.http.delete<{ success: boolean; message: string }>(
+      `${this.apiBaseUrl}/locations/${id}`,
+    );
+  }
+
+  deleteImportBatch(batchId: string): Observable<{
+    success: boolean;
+    message: string;
+    data?: { deleted_count?: number; import_batch_id?: string | null };
+  }> {
+    return this.http.delete<{
+      success: boolean;
+      message: string;
+      data?: { deleted_count?: number; import_batch_id?: string | null };
+    }>(`${this.apiBaseUrl}/locations/import-batches/${batchId}`);
   }
 
   fetchFavoriteSlugs(userId: number): Observable<string[]> {
@@ -394,11 +514,66 @@ export class LocationApiService {
     message: string;
     data?: { id: string; status: string; created_at: string };
   }> {
+    const formData = new FormData();
+
+    formData.append('contact_name', payload.contact_name);
+    formData.append('contact_phone', payload.contact_phone);
+    formData.append('name', payload.name);
+    formData.append('category', payload.category);
+
+    if (payload.contact_email) {
+      formData.append('contact_email', payload.contact_email);
+    }
+
+    if (payload.city) {
+      formData.append('city', payload.city);
+    }
+
+    if (payload.district) {
+      formData.append('district', payload.district);
+    }
+
+    if (payload.ward) {
+      formData.append('ward', payload.ward);
+    }
+
+    if (payload.address) {
+      formData.append('address', payload.address);
+    }
+
+    if (payload.description) {
+      formData.append('description', payload.description);
+    }
+
+    if (payload.price_range) {
+      formData.append('price_range', payload.price_range);
+    }
+
+    if (payload.website) {
+      formData.append('website', payload.website);
+    }
+
+    if (payload.google_maps_link) {
+      formData.append('google_maps_link', payload.google_maps_link);
+    }
+
+    if (payload.main_image) {
+      formData.append('main_image', payload.main_image);
+    }
+
+    payload.gallery_images?.forEach((file) => {
+      formData.append('gallery_images[]', file, file.name);
+    });
+
+    payload.amenities?.forEach((item) => {
+      formData.append('amenities[]', item);
+    });
+
     return this.http.post<{
       success: boolean;
       message: string;
       data?: { id: string; status: string; created_at: string };
-    }>(`${this.apiBaseUrl}/owner/location-submissions`, payload);
+    }>(`${this.apiBaseUrl}/owner/location-submissions`, formData);
   }
 
   private fetchLocationPage(

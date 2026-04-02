@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { Aside } from '../shared/ui/aside/aside';
 import { Header } from '../shared/ui/header/header';
@@ -14,7 +14,8 @@ import { AuthRequiredAlert } from '../shared/ui/auth-required-alert/auth-require
   templateUrl: './user-shell.html',
 })
 export class UserShell {
-  constructor(public dataService: DataService) {}
+  public dataService = inject(DataService);
+  protected mobileSidebarOpen = this.dataService.mobileSidebarOpen;
 
   closeMobileSidebar() {
     this.dataService.mobileSidebarOpen.set(false);

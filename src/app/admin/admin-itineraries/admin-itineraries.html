@@ -1,7 +1,6 @@
 <div class="admin-page">
   <app-admin-header title="Lịch trình AI" breadcrumb="Lịch trình">
-    <button (click)="showGenerateForm.set(!showGenerateForm())"
-      class="btn-primary">
+    <button (click)="showGenerateForm.set(!showGenerateForm())" class="btn-primary">
       <i class="fa-solid fa-sparkles"></i> {{ showGenerateForm() ? 'Ẩn form' :
       'Tạo mới' }}
     </button>
@@ -9,47 +8,41 @@
       <i class="fa-solid fa-cloud-arrow-down"></i> Đồng bộ API
     </button>
     <button (click)="loadData()" class="btn-outline">
-      <i
-        [class]="loading() ? 'fa-solid fa-spinner animate-spin' : 'fa-solid fa-arrows-rotate'"></i>
+      <i [class]="loading() ? 'fa-solid fa-spinner animate-spin' : 'fa-solid fa-arrows-rotate'"></i>
       Làm mới
     </button>
   </app-admin-header>
 
   <!-- Metrics -->
   <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-    <app-metric-card *ngFor="let m of metrics()" [label]="m.label"
-      [value]="m.value" [note]="m.note" [icon]="m.icon" [variant]="m.variant" />
+    <app-metric-card *ngFor="let m of metrics()" [label]="m.label" [value]="m.value" [note]="m.note" [icon]="m.icon"
+      [variant]="m.variant" />
   </section>
 
   <!-- Generate Form -->
   <section *ngIf="showGenerateForm()" class="mt-6 card">
     <h3 class="mb-4 text-sm font-bold text-slate-800">Tạo lịch trình bằng
       AI</h3>
-    <p *ngIf="generateError()"
-      class="mb-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">{{
+    <p *ngIf="generateError()" class="mb-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">{{
       generateError() }}</p>
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       <div class="filter-group">
         <label class="filter-label">Số ngày</label>
-        <input type="number" [ngModel]="genDays()"
-          (ngModelChange)="genDays.set($event)" min="1" max="14"
+        <input type="number" [ngModel]="genDays()" (ngModelChange)="genDays.set($event)" min="1" max="14"
           class="filter-input" />
       </div>
       <div class="filter-group">
         <label class="filter-label">Thành phố</label>
-        <input type="text" [ngModel]="genCity()"
-          (ngModelChange)="genCity.set($event)" class="filter-input" />
+        <input type="text" [ngModel]="genCity()" (ngModelChange)="genCity.set($event)" class="filter-input" />
       </div>
       <div class="filter-group">
         <label class="filter-label">Ngân sách (VNĐ)</label>
-        <input type="number" [ngModel]="genBudget()"
-          (ngModelChange)="genBudget.set($event)" placeholder="Không giới hạn"
-          class="filter-input" />
+        <input type="number" [ngModel]="genBudget()" (ngModelChange)="genBudget.set($event)"
+          placeholder="Không giới hạn" class="filter-input" />
       </div>
       <div class="filter-group">
         <label class="filter-label">Phương tiện</label>
-        <select [ngModel]="genTravelMode()"
-          (ngModelChange)="genTravelMode.set($event)" class="filter-input">
+        <select [ngModel]="genTravelMode()" (ngModelChange)="genTravelMode.set($event)" class="filter-input">
           <option value="motorbike">Xe máy</option>
           <option value="car">Ô tô</option>
           <option value="walking">Đi bộ</option>
@@ -58,8 +51,7 @@
       </div>
       <div class="filter-group">
         <label class="filter-label">Phong cách</label>
-        <select [ngModel]="genTripStyle()"
-          (ngModelChange)="genTripStyle.set($event)" class="filter-input">
+        <select [ngModel]="genTripStyle()" (ngModelChange)="genTripStyle.set($event)" class="filter-input">
           <option value="balanced">Cân bằng</option>
           <option value="relaxed">Thư giãn</option>
           <option value="packed">Dày đặc</option>
@@ -68,8 +60,7 @@
       </div>
       <div class="filter-group">
         <label class="filter-label">Đồng hành</label>
-        <select [ngModel]="genCompanion()"
-          (ngModelChange)="genCompanion.set($event)" class="filter-input">
+        <select [ngModel]="genCompanion()" (ngModelChange)="genCompanion.set($event)" class="filter-input">
           <option value="solo">Một mình</option>
           <option value="couple">Cặp đôi</option>
           <option value="family">Gia đình</option>
@@ -77,10 +68,8 @@
         </select>
       </div>
     </div>
-    <button (click)="generateItinerary()" [disabled]="generating()"
-      class="btn-primary mt-4">
-      <i
-        [class]="generating() ? 'fa-solid fa-spinner animate-spin' : 'fa-solid fa-wand-magic-sparkles'"></i>
+    <button (click)="generateItinerary()" [disabled]="generating()" class="btn-primary mt-4">
+      <i [class]="generating() ? 'fa-solid fa-spinner animate-spin' : 'fa-solid fa-wand-magic-sparkles'"></i>
       {{ generating() ? 'Đang tạo...' : 'Tạo lịch trình' }}
     </button>
   </section>
@@ -97,18 +86,12 @@
       <div class="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div class="filter-group">
           <label class="filter-label">Tìm kiếm</label>
-          <input
-            type="text"
-            [ngModel]="search()"
-            (ngModelChange)="search.set($event); applyFilters()"
-            placeholder="Tên lịch trình, thành phố, model..."
-            class="filter-input" />
+          <input type="text" [ngModel]="search()" (ngModelChange)="search.set($event); applyFilters()"
+            placeholder="Tên lịch trình, thành phố, model..." class="filter-input" />
         </div>
         <div class="filter-group">
           <label class="filter-label">Thành phố</label>
-          <select
-            [ngModel]="cityFilter()"
-            (ngModelChange)="cityFilter.set($event); applyFilters()"
+          <select [ngModel]="cityFilter()" (ngModelChange)="cityFilter.set($event); applyFilters()"
             class="filter-input">
             <option value="all">Tất cả</option>
             <option *ngFor="let city of cityOptions()" [value]="city">{{ city }}</option>
@@ -116,9 +99,7 @@
         </div>
         <div class="filter-group">
           <label class="filter-label">AI Model</label>
-          <select
-            [ngModel]="modelFilter()"
-            (ngModelChange)="modelFilter.set($event); applyFilters()"
+          <select [ngModel]="modelFilter()" (ngModelChange)="modelFilter.set($event); applyFilters()"
             class="filter-input">
             <option value="all">Tất cả</option>
             <option *ngFor="let model of modelOptions()" [value]="model">{{ model }}</option>
@@ -126,9 +107,7 @@
         </div>
         <div class="filter-group">
           <label class="filter-label">Nguồn tạo</label>
-          <select
-            [ngModel]="sourceFilter()"
-            (ngModelChange)="sourceFilter.set($event); applyFilters()"
+          <select [ngModel]="sourceFilter()" (ngModelChange)="sourceFilter.set($event); applyFilters()"
             class="filter-input">
             <option value="all">Tất cả</option>
             <option value="ai">AI</option>
@@ -138,11 +117,9 @@
       </div>
 
       <div class="space-y-2">
-        <div *ngFor="let it of pagedItineraries()" class="it-row"
-          (click)="toggleExpand(it.id)">
+        <div *ngFor="let it of pagedItineraries()" class="it-row" (click)="toggleExpand(it.id)">
           <div class="flex items-center gap-3">
-            <div
-              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600">
               <i class="fa-solid fa-route text-xs"></i>
             </div>
             <div class="min-w-0 flex-1">
@@ -152,65 +129,52 @@
                 • {{ it.days }} ngày • {{ it.items.length }} điểm • {{
                 it.ai_model || 'N/A' }}</p>
             </div>
-            <span
-              class="status-chip"
-              [class.status-chip--ai]="(it.itinerary_type || 'manual') === 'ai'">
+            <span class="status-chip" [class.status-chip--ai]="(it.itinerary_type || 'manual') === 'ai'">
               {{ (it.itinerary_type || 'manual') === 'ai' ? 'AI' : 'Manual' }}
             </span>
             <span class="shrink-0 text-[11px] text-slate-400">{{ it.created_at |
               date:'dd/MM/yy' }}</span>
-            <a
-              [routerLink]="['/planner', it.id, 'edit']"
-              (click)="$event.stopPropagation()"
-              class="action-btn"
+            <a [routerLink]="['/planner', it.id, 'edit']" (click)="$event.stopPropagation()" class="action-btn"
               title="Sửa">
               <i class="fa-solid fa-pen"></i>
             </a>
-            <button
-              (click)="duplicateItinerary(it); $event.stopPropagation()"
-              class="action-btn"
-              [disabled]="duplicateLoadingId() === it.id"
-              title="Nhân bản">
-              <i [class]="duplicateLoadingId() === it.id ? 'fa-solid fa-spinner animate-spin' : 'fa-regular fa-copy'"></i>
+            <button (click)="duplicateItinerary(it); $event.stopPropagation()" class="action-btn"
+              [disabled]="duplicateLoadingId() === it.id" title="Nhân bản">
+              <i
+                [class]="duplicateLoadingId() === it.id ? 'fa-solid fa-spinner animate-spin' : 'fa-regular fa-copy'"></i>
             </button>
-            <button
-              (click)="exportItinerary(it); $event.stopPropagation()"
-              class="action-btn"
-              title="Export JSON">
+            <button (click)="exportItinerary(it); $event.stopPropagation()" class="action-btn" title="Export JSON">
               <i class="fa-solid fa-file-export"></i>
             </button>
-            <button (click)="deleteItinerary(it.id); $event.stopPropagation()"
-              class="action-btn danger" title="Xóa">
+            <button (click)="deleteItinerary(it.id); $event.stopPropagation()" class="action-btn danger" title="Xóa">
               <i class="fa-solid fa-trash-can"></i>
             </button>
           </div>
 
           <!-- Expanded Detail -->
-          <div *ngIf="expandedId() === it.id"
-            class="mt-3 rounded-xl bg-slate-50 p-4">
+          <div *ngIf="expandedId() === it.id" class="mt-3 rounded-xl bg-slate-50 p-4">
             <div class="grid gap-3 sm:grid-cols-3 mb-3">
-              <div><span class="detail-label">Ngân sách</span><span
-                  class="detail-value">{{ it.budget || 'N/A' }}</span></div>
-              <div><span class="detail-label">Mô hình di lịch</span><span
-                  class="detail-value">{{ it.travel_mode || 'N/A'
+              <div><span class="detail-label">Ngân sách</span><span class="detail-value">{{ it.budget || 'N/A' }}</span>
+              </div>
+              <div><span class="detail-label">Mô hình di lịch</span><span class="detail-value">{{ it.travel_mode ||
+                  'N/A'
                   }}</span></div>
-              <div><span class="detail-label">Tổng km</span><span
-                  class="detail-value">{{ it.overview?.total_travel_distance_km
+              <div><span class="detail-label">Tổng km</span><span class="detail-value">{{
+                  it.overview?.total_travel_distance_km
                   || 'N/A' }}</span></div>
             </div>
             <div class="mb-3 grid gap-3 sm:grid-cols-3">
-              <div><span class="detail-label">Bạn đồng hành</span><span
-                  class="detail-value">{{ it.preferences.companion_type || 'N/A' }}</span></div>
-              <div><span class="detail-label">Phong cách du lịch</span><span
-                  class="detail-value">{{ it.preferences.trip_style || 'N/A' }}</span></div>
-              <div><span class="detail-label">Năng lượng</span><span
-                  class="detail-value">{{ it.preferences.energy_level || 'N/A' }}</span></div>
+              <div><span class="detail-label">Bạn đồng hành</span><span class="detail-value">{{
+                  it.preferences.companion_type || 'N/A' }}</span></div>
+              <div><span class="detail-label">Phong cách du lịch</span><span class="detail-value">{{
+                  it.preferences.trip_style || 'N/A' }}</span></div>
+              <div><span class="detail-label">Năng lượng</span><span class="detail-value">{{ it.preferences.energy_level
+                  || 'N/A' }}</span></div>
             </div>
             <div *ngFor="let day of it.day_summaries" class="mb-2">
               <p class="text-xs font-bold text-slate-600 mb-1">Ngày {{
                 day.day_number }}: {{ day.theme || 'Không rõ' }}</p>
-              <div *ngFor="let item of day.items"
-                class="ml-4 flex items-center gap-2 py-1 text-xs text-slate-600">
+              <div *ngFor="let item of day.items" class="ml-4 flex items-center gap-2 py-1 text-xs text-slate-600">
                 <span class="text-slate-400">{{ item.start_time || '?' }}</span>
                 <span class="font-medium">{{ item.activity_title }}</span>
                 <span *ngIf="item.location" class="text-orange-500">📍 {{
@@ -223,7 +187,8 @@
               }}</p>
           </div>
         </div>
-        <p *ngIf="!loading() && !pagedItineraries().length" class="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-400">
+        <p *ngIf="!loading() && !pagedItineraries().length"
+          class="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-400">
           Chưa có lịch trình nào khớp bộ lọc hiện tại.
         </p>
       </div>
@@ -233,12 +198,10 @@
         <p class="text-xs text-slate-400">Trang {{ currentPage() }}
           / {{ totalPages() }}</p>
         <div class="flex gap-1">
-          <button (click)="goToPage(currentPage() - 1)"
-            [disabled]="currentPage() <= 1" class="page-btn"><i
+          <button (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() <= 1" class="page-btn"><i
               class="fa-solid fa-chevron-left"></i></button>
-          <button (click)="goToPage(currentPage() + 1)"
-            [disabled]="currentPage() >= totalPages()"
-            class="page-btn"><i class="fa-solid fa-chevron-right"></i></button>
+          <button (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() >= totalPages()" class="page-btn"><i
+              class="fa-solid fa-chevron-right"></i></button>
         </div>
       </div>
     </div>
@@ -248,11 +211,9 @@
       <div class="card">
         <h3 class="mb-3 text-sm font-bold text-slate-800">Top AI Models</h3>
         <div class="space-y-2">
-          <div *ngFor="let model of topModels()"
-            class="flex items-center justify-between">
+          <div *ngFor="let model of topModels()" class="flex items-center justify-between">
             <span class="text-sm text-slate-700">{{ model.label }}</span>
-            <span
-              class="rounded-md bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700">{{
+            <span class="rounded-md bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700">{{
               model.count }}</span>
           </div>
           <p *ngIf="!topModels().length" class="text-xs text-slate-400">Chưa có
@@ -264,10 +225,8 @@
         <h3 class="mb-3 text-sm font-bold text-slate-800">Nhịp tạo theo
           tuần</h3>
         <div class="flex h-24 items-end gap-1.5">
-          <div *ngFor="let bar of weekBars()"
-            class="flex flex-1 flex-col items-center gap-1">
-            <div class="w-full rounded-t-md bg-orange-200 transition-all"
-              [style.height]="bar.height"></div>
+          <div *ngFor="let bar of weekBars()" class="flex flex-1 flex-col items-center gap-1">
+            <div class="w-full rounded-t-md bg-orange-200 transition-all" [style.height]="bar.height"></div>
             <span class="text-[9px] font-bold text-slate-400">{{ bar.label
               }}</span>
           </div>

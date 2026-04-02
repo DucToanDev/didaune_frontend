@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { Place, PlaceAmenityOption, PlaceReview } from '../../core/models/app.models';
 import { DataService } from '../../core/services/data.service';
+import { SeoService } from '../../core/services/seo.service';
 import { ImageLightbox } from '../../shared/ui/image-lightbox/image-lightbox';
 
 @Component({
@@ -16,6 +17,7 @@ export class Detail {
   private initialReviewLimit = 6;
   private route = inject(ActivatedRoute);
   public dataService = inject(DataService);
+  private seo = inject(SeoService);
 
   place = signal<Place | undefined>(undefined);
   reviews = signal<PlaceReview[]>([]);
@@ -89,6 +91,14 @@ export class Detail {
         return;
       }
 
+      this.seo.setPage({
+        title: 'Chi tiết địa điểm',
+        description: 'Xem thông tin chi tiết, tiện ích, hình ảnh và đánh giá của địa điểm trên DiDauNe.',
+        path: `/detail/${slug}`,
+        type: 'article',
+        jsonLd: null,
+      });
+
       this.dataService.getPlaceBySlug(slug).subscribe((place) => {
         this.place.set(place);
         this.reviews.set([]);
@@ -98,6 +108,54 @@ export class Detail {
         if (!place) {
           return;
         }
+
+        const description =
+          place.description?.trim() ||
+          `${place.name} tại ${place.district_name}, ${place.city_name}. Xem hình ảnh, đánh giá, tiện ích và thông tin cần thiết trước khi ghé thăm.`;
+        const schemaType = place.categories.includes('hotel') || place.categories.includes('homestay')
+          ? 'LodgingBusiness'
+          : place.categories.includes('restaurant')
+            ? 'Restaurant'
+            : place.categories.includes('travel')
+              ? 'TouristAttraction'
+              : 'CafeOrCoffeeShop';
+
+        this.seo.setPage({
+          title: `${place.name} - ${place.district_name}`,
+          description,
+          path: `/detail/${place.slug}`,
+          image: place.image,
+          type: 'article',
+          keywords: [
+            place.name,
+            place.district_name,
+            place.city_name,
+            ...place.category_labels.slice(0, 3),
+          ],
+          jsonLd: {
+            '@context': 'https://schema.org',
+            '@type': schemaType,
+            name: place.name,
+            image: this.galleryUrls(),
+            description,
+            address: {
+              '@type': 'PostalAddress',
+              streetAddress: place.address,
+              addressLocality: place.district_name,
+              addressRegion: place.city_name,
+              addressCountry: 'VN',
+            },
+            aggregateRating: place.review_count
+              ? {
+                  '@type': 'AggregateRating',
+                  ratingValue: place.rating,
+                  reviewCount: place.review_count,
+                }
+              : undefined,
+            telephone: place.phone || undefined,
+            url: `https://deedee-unfoolable-tanika.ngrok-free.dev/detail/${place.slug}`,
+          },
+        });
 
         this.dataService.recordRecentlyViewed(place);
         this.dataService.getMergedReviews(place).subscribe((reviews) => this.reviews.set(reviews));

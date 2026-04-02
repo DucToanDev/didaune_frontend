@@ -249,11 +249,6 @@
             class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-[14px] outline-none focus:border-primary focus:bg-white" />
         </div>
 
-        <p *ngIf="authError()"
-          class="rounded-2xl bg-rose-50 px-4 py-3 text-[13px] text-rose-600">
-          {{ authError() }}
-        </p>
-
         <button type="button" (click)="submitAuth()"
           [disabled]="authSubmitting()"
           class="mt-1 w-full rounded-2xl bg-slate-900 px-4 py-2.5 text-[14px] font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70">

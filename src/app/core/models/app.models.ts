@@ -128,6 +128,9 @@ export interface PlaceItineraryOverview {
 
 export interface Place {
   id: string;
+  source?: string | null;
+  import_batch_id?: string | null;
+  import_file_name?: string | null;
   name: string;
   slug: string;
   city_id: string;
@@ -243,7 +246,12 @@ export interface User {
   bio: string;
   membership: string;
   points: number;
+  full_name?: string | null;
+  username?: string | null;
+  phone?: string | null;
   role?: string | null;
+  is_active?: boolean;
+  last_login_at?: string | null;
 }
 
 export interface Review extends PlaceReview {

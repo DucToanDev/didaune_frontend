@@ -64,7 +64,12 @@ export const routes: Routes = [
       { path: 'planner/new/manual', component: Planner, title: 'Tạo lịch trình thủ công' },
       { path: 'planner/edit', redirectTo: 'planner' },
       { path: 'planner/:id/edit', component: Planner, title: 'Chỉnh sửa chuyến đi' },
-      { path: 'partner/register', component: PartnerRegister, title: 'Đăng ký đối tác' },
+      {
+        path: 'partner/register',
+        component: PartnerRegister,
+        title: 'Đóng góp địa điểm',
+        canActivate: [requireAuth],
+      },
       { path: 'favorite', component: Favorite, title: 'Yêu thích', canActivate: [requireAuth] },
       { path: 'detail/:slug', component: Detail, title: 'Chi tiết' },
       { path: 'profile', component: Profile, title: 'Hồ sơ', canActivate: [requireAuth] },

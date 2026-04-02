@@ -1,0 +1,185 @@
+<div class="admin-page">
+  <app-admin-header title="Đóng góp địa điểm" breadcrumb="Đóng góp địa điểm">
+    <button (click)="loadData(1)" class="btn-outline">
+      <i [class]="loading() ? 'fa-solid fa-spinner animate-spin' : 'fa-solid fa-arrows-rotate'"></i>
+      Làm mới
+    </button>
+  </app-admin-header>
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">Danh sách đóng góp ({{ pagination().total }})</h2>
+        <p class="card-subtitle">{{ pendingCount() }} mục chờ duyệt trên trang hiện tại.</p>
+      </div>
+    </div>
+
+    <div class="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="filter-group">
+        <label class="filter-label">Tìm kiếm</label>
+        <input
+          type="text"
+          [ngModel]="search()"
+          (ngModelChange)="search.set($event)"
+          (keyup.enter)="loadData(1)"
+          placeholder="Tên địa điểm, người gửi, email..."
+          class="filter-input" />
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Trạng thái</label>
+        <select
+          [ngModel]="statusFilter()"
+          (ngModelChange)="statusFilter.set($event); loadData(1)"
+          class="filter-input">
+          <option value="">Tất cả</option>
+          <option value="pending">Chờ duyệt</option>
+          <option value="approved">Đã duyệt</option>
+          <option value="rejected">Đã từ chối</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Danh mục</label>
+        <select
+          [ngModel]="categoryFilter()"
+          (ngModelChange)="categoryFilter.set($event); loadData(1)"
+          class="filter-input">
+          <option value="">Tất cả</option>
+          <option value="cafe">Cafe</option>
+          <option value="hotel">Hotel</option>
+          <option value="homestay">Homestay</option>
+          <option value="restaurant">Nhà hàng</option>
+          <option value="travel">Du lịch</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Địa điểm</th>
+            <th>Người đóng góp</th>
+            <th>Danh mục</th>
+            <th>Trạng thái</th>
+            <th>Ngày gửi</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let submission of submissions()">
+            <td>
+              <div class="submission-place">
+                <img
+                  *ngIf="submission.main_image_url"
+                  [src]="imageUrl(submission.main_image_url)"
+                  [alt]="submission.name"
+                  class="submission-thumb" />
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-semibold text-slate-800">{{ submission.name }}</p>
+                  <p class="text-xs text-slate-400">{{ submission.city || 'Chưa rõ thành phố' }}</p>
+                </div>
+              </div>
+            </td>
+            <td class="text-sm text-slate-600">
+              <div class="font-semibold text-slate-700">{{ submission.contact_name }}</div>
+              <div>{{ submission.contact_phone }}</div>
+              <div *ngIf="submission.contact_email" class="text-xs text-slate-400">{{ submission.contact_email }}</div>
+            </td>
+            <td>
+              <span class="role-badge role-user">{{ categoryLabel(submission.category) }}</span>
+            </td>
+            <td>
+              <span
+                class="status-badge"
+                [class.status-pending]="submission.status === 'pending'"
+                [class.status-approved]="submission.status === 'approved'"
+                [class.status-rejected]="submission.status === 'rejected'">
+                {{ statusLabel(submission.status) }}
+              </span>
+            </td>
+            <td class="text-sm text-slate-500">{{ submission.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td>
+              <button type="button" (click)="openDetail(submission)" class="btn-outline btn-sm">
+                <i class="fa-solid fa-eye"></i>
+                Xem
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-4 flex items-center justify-between">
+      <p class="text-xs text-slate-400">Trang {{ pagination().current_page }} / {{ pagination().last_page }}</p>
+      <div class="flex gap-1">
+        <button (click)="goToPage(pagination().current_page - 1)" [disabled]="pagination().current_page <= 1" class="page-btn">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <button (click)="goToPage(pagination().current_page + 1)" [disabled]="pagination().current_page >= pagination().last_page" class="page-btn">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <app-detail-panel
+    *ngIf="selectedSubmission() as submission"
+    subtitle="Chi tiết đóng góp"
+    [heading]="submission.name"
+    [description]="submission.address || submission.city || ''"
+    panelClass="max-w-3xl"
+    (closed)="closeDetail()">
+    <div class="detail-grid">
+      <div class="detail-section">
+        <h3>Thông tin cơ bản</h3>
+        <div class="detail-meta">
+          <div><strong>Người gửi:</strong> {{ submission.contact_name }}</div>
+          <div><strong>Điện thoại:</strong> {{ submission.contact_phone }}</div>
+          <div><strong>Email:</strong> {{ submission.contact_email || 'Không có' }}</div>
+          <div><strong>Danh mục:</strong> {{ categoryLabel(submission.category) }}</div>
+          <div><strong>Khoảng giá:</strong> {{ submission.price_range || 'Không có' }}</div>
+          <div><strong>Trạng thái:</strong> {{ statusLabel(submission.status) }}</div>
+        </div>
+      </div>
+
+      <div class="detail-section" *ngIf="submission.description">
+        <h3>Mô tả</h3>
+        <p class="detail-description">{{ submission.description }}</p>
+      </div>
+
+      <div class="detail-section" *ngIf="submission.main_image_url">
+        <h3>Ảnh chính</h3>
+        <img [src]="imageUrl(submission.main_image_url)" [alt]="submission.name" class="detail-main-image" />
+      </div>
+
+      <div class="detail-section" *ngIf="galleryImages(submission).length">
+        <h3>Thumbnail</h3>
+        <div class="detail-gallery">
+          <img *ngFor="let image of galleryImages(submission)" [src]="image" [alt]="submission.name" />
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h3>Ghi chú admin</h3>
+        <textarea
+          [ngModel]="adminNote()"
+          (ngModelChange)="adminNote.set($event)"
+          rows="4"
+          class="filter-input detail-note"></textarea>
+      </div>
+    </div>
+
+    <div class="detail-actions">
+      <button type="button" class="btn-outline" [disabled]="saving()" (click)="updateStatus('pending')">
+        Đưa về chờ duyệt
+      </button>
+      <button type="button" class="btn-outline danger-outline" [disabled]="saving()" (click)="updateStatus('rejected')">
+        Từ chối
+      </button>
+      <button type="button" class="btn-primary" [disabled]="saving()" (click)="updateStatus('approved')">
+        <i [class]="saving() ? 'fa-solid fa-spinner animate-spin' : 'fa-solid fa-check'"></i>
+        Duyệt
+      </button>
+    </div>
+  </app-detail-panel>
+</div>

@@ -1,9 +1,29 @@
-import { Component, computed, signal, inject, OnInit, effect } from '@angular/core';
+import {
+  Component,
+  computed,
+  signal,
+  inject,
+  OnInit,
+  effect,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { toObservable } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { finalize } from 'rxjs';
+import {
+  catchError,
+  combineLatest,
+  debounceTime,
+  distinctUntilChanged,
+  finalize,
+  map,
+  of,
+  startWith,
+  switchMap,
+} from 'rxjs';
 import { City, Place, Ward } from '../../../core/models/app.models';
 import { DataService } from '../../../core/services/data.service';
+import { LocationApiService } from '../../../core/services/location-api.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { Router } from '@angular/router';
 import { BACKEND_API_CONFIG } from '../../../core/config/backend-api.config';
 
@@ -57,7 +77,9 @@ declare global {
 })
 export class Header implements OnInit {
   public dataService = inject(DataService);
+  private locationApi = inject(LocationApiService);
   private router = inject(Router);
+  private toastService = inject(ToastService);
 
   cities = signal<City[]>([]);
   wards = signal<Ward[]>([]);
@@ -73,7 +95,7 @@ export class Header implements OnInit {
   authConfirmPassword = signal('');
   authError = signal('');
   authSubmitting = signal(false);
-  places = signal<Place[]>([]);
+  apiSearchSuggestions = signal<Place[]>([]);
   recentViewedPlaces = signal<Place[]>([]);
   private googleSdkPromise: Promise<void> | null = null;
   private facebookSdkPromise: Promise<void> | null = null;
@@ -81,6 +103,28 @@ export class Header implements OnInit {
     callback: (response: { access_token?: string; error?: string }) => void;
     requestAccessToken: (options?: { prompt?: string }) => void;
   } | null = null;
+  private searchOpen$ = toObservable(
+    computed(() => this.desktopSearchOpen() || this.mobileSearchOpen()),
+  ).pipe(
+    startWith(this.desktopSearchOpen() || this.mobileSearchOpen()),
+    distinctUntilChanged(),
+  );
+  private cityId$ = toObservable(this.dataService.currentCityId).pipe(
+    startWith(this.dataService.currentCityId()),
+    distinctUntilChanged(),
+  );
+  private searchQuery$ = toObservable(this.dataService.searchQuery).pipe(
+    startWith(this.dataService.searchQuery()),
+    map((value) => value.trim()),
+    debounceTime(250),
+    distinctUntilChanged(),
+  );
+  private recentViewedCount$ = toObservable(
+    computed(() => this.recentViewedPlaces().length),
+  ).pipe(
+    startWith(this.recentViewedPlaces().length),
+    distinctUntilChanged(),
+  );
 
   constructor() {
     effect(() => {
@@ -92,6 +136,16 @@ export class Header implements OnInit {
 
       this.openAuthModal(mode);
       this.dataService.clearAuthModalRequest();
+    });
+
+    effect(() => {
+      const authError = this.authError();
+
+      if (!authError) {
+        return;
+      }
+
+      this.toastService.error(authError);
     });
   }
   filteredWards = computed(() => {
@@ -109,31 +163,25 @@ export class Header implements OnInit {
     const query = this.dataService.searchQuery().trim().toLowerCase();
     const recent = this.recentViewedPlaces();
     const recentSlugs = new Set(recent.map((place) => place.slug));
-    const cityPlaces = this.places()
-      .filter((place) => place.city_id === this.dataService.currentCityId())
-      .sort(
-        (first, second) =>
-          second.review_count - first.review_count || second.rating - first.rating,
-      );
+    const suggestions = this.apiSearchSuggestions();
 
     if (query) {
       const recentMatches = recent.filter((place) =>
         this.matchesPlaceQuery(place, query),
       );
-      const cityMatches = cityPlaces.filter(
+      const apiMatches = suggestions.filter(
         (place) =>
           !recentSlugs.has(place.slug) && this.matchesPlaceQuery(place, query),
       );
 
-      return [...recentMatches, ...cityMatches].slice(0, 10);
+      return [...recentMatches, ...apiMatches].slice(0, 10);
     }
 
     if (recent.length) {
-      const fallback = cityPlaces.filter((place) => !recentSlugs.has(place.slug));
-      return [...recent.slice(0, 5), ...fallback.slice(0, 5)].slice(0, 10);
+      return recent.slice(0, 10);
     }
 
-    return cityPlaces.slice(0, 10);
+    return suggestions.slice(0, 10);
   });
   searchSuggestionTitle = computed(() => {
     const query = this.dataService.searchQuery().trim();
@@ -145,9 +193,7 @@ export class Header implements OnInit {
       return `Gợi ý cho "${query}"`;
     }
 
-    return this.recentViewedPlaces().length
-      ? ''
-      : `Top quán tại ${city}`;
+    return this.recentViewedPlaces().length ? '' : `Top quán tại ${city}`;
   });
 
   ngOnInit() {
@@ -155,10 +201,10 @@ export class Header implements OnInit {
     this.wardQuery.set(this.dataService.currentWardName());
     this.dataService.getCities().subscribe((data) => this.cities.set(data));
     this.loadWards(this.dataService.currentCityId());
-    this.dataService.getPlaces().subscribe((places) => this.places.set(places));
     this.dataService
       .getRecentlyViewedPlaces(5)
       .subscribe((places) => this.recentViewedPlaces.set(places));
+    this.setupSearchSuggestions();
   }
 
   onCityChange(event: any) {
@@ -329,6 +375,21 @@ export class Header implements OnInit {
     const password = this.authPassword().trim();
     const confirmPassword = this.authConfirmPassword().trim();
 
+    if (!email) {
+      this.authError.set('Vui lòng nhập email.');
+      return;
+    }
+
+    if (!this.isValidEmail(email)) {
+      this.authError.set('Email không đúng định dạng.');
+      return;
+    }
+
+    if (!password) {
+      this.authError.set('Vui lòng nhập mật khẩu.');
+      return;
+    }
+
     if (mode === 'register' && !name) {
       this.authError.set('Vui lòng nhập họ và tên.');
       return;
@@ -341,6 +402,11 @@ export class Header implements OnInit {
 
     if (!password) {
       this.authError.set('Vui lòng nhập mật khẩu.');
+      return;
+    }
+
+    if (mode === 'register' && password.length < 6) {
+      this.authError.set('Mật khẩu phải có ít nhất 6 ký tự.');
       return;
     }
 
@@ -359,6 +425,9 @@ export class Header implements OnInit {
 
     request$.pipe(finalize(() => this.authSubmitting.set(false))).subscribe({
       next: () => {
+        this.toastService.success(
+          mode === 'login' ? 'Đăng nhập thành công.' : 'Đăng ký thành công.',
+        );
         this.dataService.resumePendingAuthAction();
         this.authModalOpen.set(false);
         this.handlePostAuthRedirect();
@@ -469,6 +538,40 @@ export class Header implements OnInit {
         selectedWard?.name ?? this.dataService.currentWardName(),
       );
     });
+  }
+
+  private setupSearchSuggestions() {
+    combineLatest([
+      this.cityId$,
+      this.searchQuery$,
+      this.searchOpen$,
+      this.recentViewedCount$,
+    ])
+      .pipe(
+        switchMap(([cityId, search, searchOpen, recentViewedCount]) => {
+          if (!searchOpen && !search) {
+            return of([] as Place[]);
+          }
+
+          if (!search && recentViewedCount > 0) {
+            return of([] as Place[]);
+          }
+
+          return this.locationApi
+            .fetchLocationsPaginated({
+              cityId,
+              search,
+              sort: 'popular',
+              page: 1,
+              perPage: 10,
+            })
+            .pipe(
+              map((result) => result.data),
+              catchError(() => of([] as Place[])),
+            );
+        }),
+      )
+      .subscribe((places) => this.apiSearchSuggestions.set(places));
   }
 
   private openSuggestion(place: Place) {
@@ -630,6 +733,7 @@ export class Header implements OnInit {
   ) {
     request$.pipe(finalize(() => this.authSubmitting.set(false))).subscribe({
       next: () => {
+        this.toastService.success('Đăng nhập thành công.');
         this.dataService.resumePendingAuthAction();
         this.authModalOpen.set(false);
         this.handlePostAuthRedirect();
@@ -638,6 +742,10 @@ export class Header implements OnInit {
         this.authError.set(this.resolveAuthError(error, fallbackMessage));
       },
     });
+  }
+
+  private isValidEmail(email: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 
   private resolveAuthError(error: unknown, fallbackMessage: string): string {
@@ -651,13 +759,50 @@ export class Header implements OnInit {
       ? Object.values(apiError.error.errors).flat()[0]
       : null;
 
-    if (typeof apiError?.error?.message === 'string') {
-      return apiError.error.message;
+    if (typeof validationMessage === 'string') {
+      return this.translateAuthError(validationMessage);
     }
 
-    return typeof validationMessage === 'string'
-      ? validationMessage
-      : fallbackMessage;
+    if (typeof apiError?.error?.message === 'string') {
+      return this.translateAuthError(apiError.error.message);
+    }
+
+    return fallbackMessage;
+  }
+
+  private translateAuthError(message: string): string {
+    const normalizedMessage = message.trim().toLowerCase();
+
+    const exactMessages: Record<string, string> = {
+      'the given data was invalid.': 'Dữ liệu không hợp lệ.',
+      'the email has already been taken.': 'Email này đã được sử dụng.',
+      'the email field is required.': 'Vui lòng nhập email.',
+      'the email must be a valid email address.': 'Email không đúng định dạng.',
+      'the password field is required.': 'Vui lòng nhập mật khẩu.',
+      'the password confirmation does not match.':
+        'Mật khẩu xác nhận không khớp.',
+      'the name field is required.': 'Vui lòng nhập họ và tên.',
+      'invalid credentials': 'Email hoặc mật khẩu không đúng.',
+      unauthorized: 'Bạn không có quyền thực hiện thao tác này.',
+    };
+
+    if (exactMessages[normalizedMessage]) {
+      return exactMessages[normalizedMessage];
+    }
+
+    if (normalizedMessage.includes('already been taken')) {
+      return 'Thông tin này đã được sử dụng.';
+    }
+
+    if (normalizedMessage.includes('must be a valid email address')) {
+      return 'Email không đúng định dạng.';
+    }
+
+    if (normalizedMessage.includes('field is required')) {
+      return 'Vui lòng nhập đầy đủ thông tin bắt buộc.';
+    }
+
+    return message;
   }
 
   private handlePostAuthRedirect() {

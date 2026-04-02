@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { RouterModule } from '@angular/router';
@@ -13,7 +13,14 @@ import {
 } from '../../core/models/app.models';
 import { DataService } from '../../core/services/data.service';
 import { LocationApiService } from '../../core/services/location-api.service';
-import { combineLatest, startWith, switchMap } from 'rxjs';
+import { SeoService } from '../../core/services/seo.service';
+import {
+  combineLatest,
+  debounceTime,
+  distinctUntilChanged,
+  startWith,
+  switchMap,
+} from 'rxjs';
 import { PlaceGridCardComponent } from '../../shared/ui/place-grid-card/place-grid-card';
 
 @Component({
@@ -26,6 +33,7 @@ import { PlaceGridCardComponent } from '../../shared/ui/place-grid-card/place-gr
 export class Discover {
   public dataService = inject(DataService);
   private locationApi = inject(LocationApiService);
+  private seo = inject(SeoService);
 
   places = signal<Place[]>([]);
   categories = signal<Category[]>([]);
@@ -81,6 +89,37 @@ export class Discover {
   });
 
   constructor() {
+    effect(() => {
+      const cityId = this.dataService.currentCityId();
+      const categoryId = this.dataService.selectedCategoryId();
+      const search = this.dataService.searchQuery().trim();
+      const cityName =
+        this.cities().find((city) => city.id === cityId)?.name || 'TP.HCM';
+      const categoryName =
+        this.categories().find((category) => category.id === categoryId)?.name || 'địa điểm';
+      const title = search
+        ? `Tìm "${search}" tại ${cityName}`
+        : categoryId && categoryId !== 'all'
+          ? `${categoryName} tại ${cityName}`
+          : `Khám phá địa điểm tại ${cityName}`;
+      const description = search
+        ? `Khám phá kết quả cho "${search}" tại ${cityName}. Xem thông tin chi tiết, đánh giá, tiện ích và lưu địa điểm phù hợp với bạn.`
+        : `Khám phá ${categoryId !== 'all' ? categoryName.toLowerCase() : 'địa điểm ăn uống, lưu trú và du lịch'} tại ${cityName}. Lọc theo khu vực, tiện ích và đánh giá trên DiDauNe.`;
+
+      this.seo.setPage({
+        title,
+        description,
+        path: '/discover',
+        keywords: [
+          categoryId !== 'all' ? categoryName : 'địa điểm',
+          cityName,
+          search || 'khám phá địa điểm',
+          'đánh giá địa điểm',
+          'đi chơi cuối tuần',
+        ].filter(Boolean),
+      });
+    });
+
     this.dataService.getCities().subscribe((cities) => this.cities.set(cities));
     this.dataService
       .getWardsByCityId(this.dataService.currentCityId())
@@ -131,6 +170,19 @@ export class Discover {
       ),
     ])
       .pipe(
+        debounceTime(200),
+        distinctUntilChanged(
+          (prev, next) =>
+            prev[0] === next[0] &&
+            prev[1] === next[1] &&
+            prev[2] === next[2] &&
+            prev[3] === next[3] &&
+            prev[4] === next[4] &&
+            prev[5] === next[5] &&
+            prev[6] === next[6] &&
+            prev[7] === next[7] &&
+            prev[8] === next[8],
+        ),
         switchMap(([cityId, wardCode, wardName, areaId, categoryId, search, sort, amenityId, page]) => {
           this.loading.set(true);
           return this.locationApi.fetchLocationsPaginated({

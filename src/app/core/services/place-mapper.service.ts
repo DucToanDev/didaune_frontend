@@ -6,6 +6,7 @@ import {
   Place,
   PlaceReview,
 } from '../models/app.models';
+import { BACKEND_API_CONFIG } from '../config/backend-api.config';
 import { PROVINCE_MAPPINGS } from '../config/location-api.config';
 import { AMENITY_CONFIG, CATEGORY_CONFIG } from '../config/place-taxonomy.config';
 import { buildUiAvatarUrl } from '../utils/avatar.utils';
@@ -94,6 +95,9 @@ export interface BackendLocationBookingPlatform {
 
 export interface BackendLocation {
   id: string;
+  source?: string | null;
+  import_batch_id?: string | null;
+  import_file_name?: string | null;
   name: string;
   slug: string;
   description?: string | null;
@@ -149,6 +153,7 @@ export interface BackendLocation {
   providedIn: 'root',
 })
 export class PlaceMapperService {
+  private readonly backendOrigin = BACKEND_API_CONFIG.baseUrl.replace(/\/api$/, '');
   private readonly travelKeywords = [
     'travel',
     'du lich',
@@ -186,9 +191,11 @@ export class PlaceMapperService {
       location.categories?.map((category) => category.category_name) ??
       this.readStringArray(rawPayload['categories']);
     const images = [
-      ...(location.images?.map((image) => image.image_url) ?? []),
-      ...(this.readImageUrls(rawPayload['featured_images']) ?? []),
-      location.featured_image ?? null,
+      ...(location.images?.map((image) => this.resolveBackendAssetUrl(image.image_url)) ?? []),
+      ...(this.readImageUrls(rawPayload['featured_images']).map((image) =>
+        this.resolveBackendAssetUrl(image),
+      ) ?? []),
+      this.resolveBackendAssetUrl(location.featured_image),
     ].filter((image, imageIndex, array): image is string => Boolean(image) && array.indexOf(image) === imageIndex);
     const gallery = images.map((image, imageIndex) => ({
       id: `${location.id}-${imageIndex}`,
@@ -205,7 +212,9 @@ export class PlaceMapperService {
       rating: review.rating ?? 0,
       comment: review.review_text?.trim() || 'Khách hàng chưa để lại nội dung.',
       created_at: review.published_at ?? new Date().toISOString(),
-      images: (review.review_images ?? []).map((image) => image.image_url),
+      images: (review.review_images ?? [])
+        .map((image) => this.resolveBackendAssetUrl(image.image_url))
+        .filter((image): image is string => Boolean(image)),
       reviewer_profile: review.reviewer_profile ?? null,
       is_local_guide: review.is_local_guide ?? false,
     }));
@@ -247,6 +256,9 @@ export class PlaceMapperService {
 
     const normalizedPlace: Place = {
       id: location.id,
+      source: this.readString(location.source),
+      import_batch_id: this.readString(location.import_batch_id),
+      import_file_name: this.readString(location.import_file_name),
       name: location.name,
       slug: location.slug,
       city_id: this.resolveCityId(location.city, fallbackCityId),
@@ -951,6 +963,18 @@ export class PlaceMapperService {
         return null;
       })
       .filter((item): item is string => Boolean(item));
+  }
+
+  private resolveBackendAssetUrl(value: string | null | undefined): string | null {
+    if (!value?.trim()) {
+      return null;
+    }
+
+    if (/^https?:\/\//i.test(value)) {
+      return value;
+    }
+
+    return `${this.backendOrigin}${value.startsWith('/') ? value : `/${value}`}`;
   }
 
   private readOwnerName(rawPayload: Record<string, unknown>): string | null {

@@ -5,6 +5,8 @@ import {
   Observable,
   catchError,
   combineLatest,
+  debounceTime,
+  distinctUntilChanged,
   map,
   of,
   shareReplay,
@@ -35,6 +37,7 @@ import {
 import { buildUiAvatarUrl } from '../utils/avatar.utils';
 import { LocationApiService } from './location-api.service';
 import { PlaceMapperService } from './place-mapper.service';
+import { UserApiService } from './user-api.service';
 
 interface ApiProvince {
   code: number;
@@ -62,7 +65,12 @@ interface BackendUser {
   bio?: string | null;
   membership_tier?: string | null;
   points?: number | null;
+  full_name?: string | null;
+  username?: string | null;
+  phone?: string | null;
   role?: string | null;
+  is_active?: boolean | null;
+  last_login_at?: string | null;
 }
 
 const DEFAULT_USER: User = {
@@ -73,7 +81,12 @@ const DEFAULT_USER: User = {
   bio: '',
   membership: 'Guest',
   points: 0,
+  full_name: null,
+  username: null,
+  phone: null,
   role: null,
+  is_active: false,
+  last_login_at: null,
 };
 
 type StoredReviewDraft = Pick<
@@ -83,19 +96,19 @@ type StoredReviewDraft = Pick<
 
 type PendingAuthAction =
   | {
-      type: 'favorite';
-      slug: string;
-    }
+    type: 'favorite';
+    slug: string;
+  }
   | {
-      type: 'review';
-      placeSlug: string;
-    }
+    type: 'review';
+    placeSlug: string;
+  }
   | {
-      type: 'planner-ai';
-    }
+    type: 'planner-ai';
+  }
   | {
-      type: 'planner-manual';
-    };
+    type: 'planner-manual';
+  };
 
 interface ProtectedAuthPrompt {
   mode: 'login' | 'register';
@@ -110,6 +123,7 @@ interface ProtectedAuthPrompt {
 export class DataService {
   private http = inject(HttpClient);
   private locationApi = inject(LocationApiService);
+  private userApi = inject(UserApiService);
   private apiBaseUrl = BACKEND_API_CONFIG.baseUrl;
 
   private provinceApiUrl = 'https://provinces.open-api.vn/api/v2/';
@@ -118,10 +132,11 @@ export class DataService {
   private userStorageKey = 'didaune_user';
   private authTokenStorageKey = 'didaune_auth_token';
   private coordinatesStorageKey = 'didaune_coordinates';
-  private recentViewedStorageKey = 'didaune_recent_viewed';
+  private recentViewedPlacesStorageKey = 'didaune_recent_viewed_places';
   private pendingAuthActionStorageKey = 'didaune_pending_auth_action';
   private postLoginRedirectStorageKey = 'didaune_post_login_redirect';
   private adminBypassEmails = ['tranthienvu215@gmail.com'];
+  private wardsCache = new Map<string, Observable<Ward[]>>();
 
   currentCityId = signal('hcm');
   currentDistrictId = signal('all');
@@ -144,8 +159,8 @@ export class DataService {
   favoriteSlugs = signal<string[]>(
     this.readStorage<string[]>(this.favoritesStorageKey, []),
   );
-  recentViewedSlugs = signal<string[]>(
-    this.readStorage<string[]>(this.recentViewedStorageKey, []),
+  recentViewedPlaces = signal<Place[]>(
+    this.readStorage<Place[]>(this.recentViewedPlacesStorageKey, []),
   );
   internalReviews = signal<PlaceReview[]>(
     this.readStorage<PlaceReview[]>(this.reviewsStorageKey, []),
@@ -157,8 +172,8 @@ export class DataService {
   private favoriteSlugs$ = toObservable(this.favoriteSlugs).pipe(
     startWith(this.favoriteSlugs()),
   );
-  private recentViewedSlugs$ = toObservable(this.recentViewedSlugs).pipe(
-    startWith(this.recentViewedSlugs()),
+  private recentViewedPlaces$ = toObservable(this.recentViewedPlaces).pipe(
+    startWith(this.recentViewedPlaces()),
   );
   private internalReviews$ = toObservable(this.internalReviews).pipe(
     startWith(this.internalReviews()),
@@ -223,6 +238,18 @@ export class DataService {
       startWith(this.currentCoordinates()),
     ),
   ]).pipe(
+    debounceTime(250),
+    distinctUntilChanged(
+      (
+        [prevCityId, prevWardCode, prevSearch, prevCoordinates],
+        [nextCityId, nextWardCode, nextSearch, nextCoordinates],
+      ) =>
+        prevCityId === nextCityId &&
+        prevWardCode === nextWardCode &&
+        prevSearch === nextSearch &&
+        prevCoordinates?.lat === nextCoordinates?.lat &&
+        prevCoordinates?.lng === nextCoordinates?.lng,
+    ),
     switchMap(([cityId, wardCode, search, coordinates]) =>
       this.locationApi
         .fetchHomeData(cityId, wardCode, search, coordinates)
@@ -239,7 +266,7 @@ export class DataService {
     shareReplay(1),
   );
 
-  constructor() {}
+  constructor() { }
 
   getDb(): Observable<Database> {
     return of({
@@ -286,12 +313,24 @@ export class DataService {
       return of([]);
     }
 
-    return this.http
+    const cached = this.wardsCache.get(cityId);
+    if (cached) {
+      return cached;
+    }
+
+    const request$ = this.http
       .get<ApiProvince>(`${this.provinceApiUrl}p/${provinceCode}?depth=2`)
       .pipe(
         map((province) => province.wards ?? []),
-        catchError(() => of([])),
+        shareReplay(1),
+        catchError(() => {
+          this.wardsCache.delete(cityId);
+          return of([] as Ward[]);
+        }),
       );
+
+    this.wardsCache.set(cityId, request$);
+    return request$;
   }
 
   getDistricts(): Observable<District[]> {
@@ -394,26 +433,19 @@ export class DataService {
   }
 
   getRecentlyViewedPlaces(limit = 8): Observable<Place[]> {
-    return combineLatest([this.getPlaces(), this.recentViewedSlugs$]).pipe(
-      map(([places, recentViewedSlugs]) => {
-        const placeMap = new Map(places.map((place) => [place.slug, place]));
-
-        return recentViewedSlugs
-          .map((slug) => placeMap.get(slug))
-          .filter((place): place is Place => Boolean(place))
-          .slice(0, limit);
-      }),
+    return this.recentViewedPlaces$.pipe(
+      map((places) => places.slice(0, limit)),
     );
   }
 
   recordRecentlyViewed(place: Place) {
-    const nextSlugs = [
-      place.slug,
-      ...this.recentViewedSlugs().filter((slug) => slug !== place.slug),
+    const nextPlaces = [
+      this.createRecentViewedSnapshot(place),
+      ...this.recentViewedPlaces().filter((item) => item.slug !== place.slug),
     ].slice(0, 8);
 
-    this.recentViewedSlugs.set(nextSlugs);
-    this.writeStorage(this.recentViewedStorageKey, nextSlugs);
+    this.recentViewedPlaces.set(nextPlaces);
+    this.writeStorage(this.recentViewedPlacesStorageKey, nextPlaces);
   }
 
   toggleFavorite(slug: string) {
@@ -482,9 +514,9 @@ export class DataService {
       return true;
     }
 
-    const currentRole = this.currentUser().role?.trim().toLowerCase();
-    if (this.isAdminLikeRole(currentRole)) {
-      return true;
+    const currentRole = this.currentUser().role?.trim().toLowerCase() || null;
+    if (this.isAuthenticated()) {
+      return this.isAdminLikeRole(currentRole);
     }
 
     const tokenClaims = this.readTokenClaims();
@@ -632,6 +664,31 @@ export class DataService {
       );
   }
 
+  refreshCurrentUser(): Observable<User | null> {
+    const currentUser = this.currentUser();
+    const userId = Number(currentUser.id);
+
+    if (
+      !this.isAuthenticated() ||
+      !Number.isFinite(userId) ||
+      userId <= 0
+    ) {
+      return of(null);
+    }
+
+    return this.userApi.getUser(userId).pipe(
+      map((user) => this.mapBackendUserToUser(user)),
+      tap((user) => this.persistCurrentUser(user, false)),
+      catchError((error) => {
+        if (error?.status === 401) {
+          this.clearAuthSession();
+        }
+
+        return of(null);
+      }),
+    );
+  }
+
   upsertCurrentUser(user: Partial<User>) {
     const nextUser: User = {
       ...this.currentUser(),
@@ -767,6 +824,16 @@ export class DataService {
     return [...mapById.values()].sort((a, b) => a.name.localeCompare(b.name));
   }
 
+  private createRecentViewedSnapshot(place: Place): Place {
+    return {
+      ...place,
+      gallery: place.gallery.slice(0, 4),
+      reviews: [],
+      owner_posts: [],
+      competitors: [],
+    };
+  }
+
   private slugify(value: string): string {
     return value
       .toLowerCase()
@@ -876,20 +943,26 @@ export class DataService {
   }
 
   private mapBackendUserToUser(user: BackendUser): User {
-    const name = user.name?.trim() || DEFAULT_USER.name;
+    const displayName =
+      user.full_name?.trim() || user.name?.trim() || DEFAULT_USER.name;
 
     return {
       id: String(user.id),
-      name,
+      name: user.name?.trim() || displayName,
       email: user.email?.trim() || DEFAULT_USER.email,
       avatar:
         user.avatar_url?.trim() ||
-        buildUiAvatarUrl(name, 'f97316', 'fff', 128),
+        buildUiAvatarUrl(displayName, 'f97316', 'fff', 128),
       bio: user.bio?.trim() || DEFAULT_USER.bio,
       membership: user.membership_tier?.trim() || DEFAULT_USER.membership,
       points:
         typeof user.points === 'number' ? user.points : DEFAULT_USER.points,
+      full_name: user.full_name?.trim() || null,
+      username: user.username?.trim() || null,
+      phone: user.phone?.trim() || null,
       role: user.role?.trim() || null,
+      is_active: Boolean(user.is_active),
+      last_login_at: user.last_login_at ?? null,
     };
   }
 
@@ -910,10 +983,19 @@ export class DataService {
     };
   }
 
-  private persistCurrentUser(user: User) {
+  private persistCurrentUser(user: User, refreshFavorites = true) {
     this.currentUser.set(user);
     this.writeStorage(this.userStorageKey, user);
-    this.refreshFavoritesFromApi();
+    if (refreshFavorites) {
+      this.refreshFavoritesFromApi();
+    }
+  }
+
+  updateCurrentUser(userPatch: Partial<User>) {
+    this.persistCurrentUser({
+      ...this.currentUser(),
+      ...userPatch,
+    });
   }
 
   private persistAuthToken(token: string | null) {

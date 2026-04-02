@@ -148,6 +148,7 @@
 .icon-button,
 .primary-button {
   display: inline-flex;
+  gap: 5px;
   align-items: center;
   justify-content: center;
   min-width: 42px;

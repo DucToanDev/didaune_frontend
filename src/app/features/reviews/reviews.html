@@ -3,7 +3,7 @@
     <div class="flex items-center gap-4">
       <img [src]="place.image" [alt]="place.name" class="h-20 w-20 rounded-2xl object-cover" />
       <div>
-        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Dang danh gia</p>
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Đang đánh giá</p>
         <h1 class="mt-1 text-2xl font-black text-slate-900">{{ place.name }}</h1>
         <p class="mt-1 text-sm text-slate-500">{{ place.district_name }}</p>
       </div>
@@ -11,8 +11,8 @@
   </div>
 
   <div class="mb-6 rounded-[30px] border border-slate-100 bg-white p-6 text-center shadow-sm">
-    <h2 class="text-xl font-black text-slate-900">Trai nghiem cua ban the nao?</h2>
-    <p class="mt-2 text-sm text-slate-500">Cham so sao va them vai nhan xet ngan de luu lai cam nhan.</p>
+    <h2 class="text-xl font-black text-slate-900">Trải nghiệm của bạn thế nào?</h2>
+    <p class="mt-2 text-sm text-slate-500">Chấm số sao và thêm vài nhận xét ngắn để lưu lại cảm nhận.</p>
     <div class="mt-6 flex justify-center gap-2 text-4xl">
       <button
         *ngFor="let star of [1, 2, 3, 4, 5]"
@@ -26,18 +26,18 @@
   </div>
 
   <div class="mb-6 rounded-[30px] border border-slate-100 bg-white p-6 shadow-sm">
-    <label class="mb-3 block text-sm font-bold text-slate-800">Chia se chi tiet</label>
+    <label class="mb-3 block text-sm font-bold text-slate-800">Chia sẻ chi tiết</label>
     <textarea
       rows="5"
       [ngModel]="comment()"
       (ngModelChange)="comment.set($event)"
-      placeholder="Do uong, khong gian, phuc vu, cho ngoi lam viec... co gi hay thi viet o day."
+      placeholder="Đồ uống, không gian, phục vụ, chỗ ngồi làm việc... có gì hay thì viết ở đây."
       class="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 outline-none"
     ></textarea>
   </div>
 
   <div class="mb-8 rounded-[30px] border border-slate-100 bg-white p-6 shadow-sm">
-    <label class="mb-4 block text-sm font-bold text-slate-800">Chon nhanh diem cong</label>
+    <label class="mb-4 block text-sm font-bold text-slate-800">Chọn nhanh điểm cộng</label>
     <div class="flex flex-wrap gap-2">
       <button
         *ngFor="let tag of quickTags"
@@ -57,13 +57,13 @@
       (click)="submit()"
       class="flex-1 rounded-2xl bg-primary px-5 py-4 text-sm font-bold text-white shadow-lg"
     >
-      Gui bai danh gia
+      Gửi bài đánh giá
     </button>
     <a
       [routerLink]="['/detail', place.slug]"
       class="rounded-2xl border border-slate-200 px-5 py-4 text-sm font-bold text-slate-700"
     >
-      Quay lai
+      Quay lại
     </a>
   </div>
 </div>

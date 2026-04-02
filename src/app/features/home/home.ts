@@ -11,6 +11,7 @@ import {
 } from '../../core/models/app.models';
 import { DataService } from '../../core/services/data.service';
 import { Router, RouterModule } from '@angular/router';
+import { SeoService } from '../../core/services/seo.service';
 import { DragScrollDirective } from '../../shared/ui/drag-scroll.directive';
 import { calculateDistanceKm } from '../../core/utils/geo.utils';
 import { getSuggestedHours } from '../../core/utils/place-display.utils';
@@ -31,12 +32,12 @@ import { PlaceGridCardComponent } from '../../shared/ui/place-grid-card/place-gr
 export class Home implements OnInit {
   public dataService = inject(DataService);
   private router = inject(Router);
+  private seo = inject(SeoService);
 
   featuredPlaces = signal<Place[]>([]);
   trendingPlaces = signal<Place[]>([]);
   newPlaces = signal<Place[]>([]);
   nearbyPlaces = signal<Place[]>([]);
-  allPlaces = signal<Place[]>([]);
   recentViewedPlaces = signal<Place[]>([]);
   categories = signal<Category[]>([]);
   cities = signal<City[]>([]);
@@ -151,6 +152,31 @@ export class Home implements OnInit {
   );
 
   ngOnInit() {
+    this.seo.setPage({
+      title: 'Khám phá địa điểm ăn uống, cafe và du lịch tại TP.HCM',
+      description:
+        'Tìm quán cafe, nhà hàng, homestay và địa điểm du lịch nổi bật tại TP.HCM. Lưu yêu thích và tạo lịch trình đi chơi bằng AI với DiDauNe.',
+      path: '/',
+      keywords: [
+        'địa điểm tp hcm',
+        'quán cafe đẹp',
+        'nhà hàng sài gòn',
+        'homestay tp hcm',
+        'lịch trình du lịch ai',
+      ],
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: 'DiDauNe',
+        url: 'https://deedee-unfoolable-tanika.ngrok-free.dev/',
+        potentialAction: {
+          '@type': 'SearchAction',
+          target:
+            'https://deedee-unfoolable-tanika.ngrok-free.dev/discover?q={search_term_string}',
+          'query-input': 'required name=search_term_string',
+        },
+      },
+    });
     this.loadData();
   }
 
@@ -164,17 +190,6 @@ export class Home implements OnInit {
     this.dataService
       .getRecentlyViewedPlaces()
       .subscribe((places) => this.recentViewedPlaces.set(places));
-    this.dataService.getPlaces().subscribe((places) => {
-      this.allPlaces.set(places);
-      if (this.demandCategories().length) {
-        this.demandCategories.update((categories) =>
-          categories.map((category) => ({
-            ...category,
-            count: this.getDemandCategoryCount(category),
-          })),
-        );
-      }
-    });
     this.dataService
       .getWardsByCityId(this.dataService.currentCityId())
       .subscribe((data) => {
@@ -197,7 +212,6 @@ export class Home implements OnInit {
         data.demand_categories.map((category) => ({
           ...category,
           name: this.getDemandCategoryDisplayName(category.name, category.id),
-          count: this.getDemandCategoryCount(category),
         })),
       );
       this.topCategories.set(data.top_categories);
@@ -424,39 +438,6 @@ export class Home implements OnInit {
       amenityId: 'all',
       searchQuery: category.name,
     };
-  }
-
-  private getDemandCategoryCount(category: HomeCategorySummary): number {
-    const { categoryId, amenityId, searchQuery } =
-      this.resolveDemandCategoryFilters(category);
-    const normalizedSearch = searchQuery.trim().toLowerCase();
-
-    return this.allPlaces().filter((place) => {
-      if (categoryId !== 'all' && !place.categories.includes(categoryId)) {
-        return false;
-      }
-
-      if (amenityId !== 'all' && !place.amenities.includes(amenityId)) {
-        return false;
-      }
-
-      if (!normalizedSearch) {
-        return true;
-      }
-
-      const searchTarget = [
-        place.name,
-        place.address,
-        place.district_name,
-        place.city_name,
-        ...place.category_labels,
-        ...place.amenity_labels,
-      ]
-        .join(' ')
-        .toLowerCase();
-
-      return searchTarget.includes(normalizedSearch);
-    }).length;
   }
 
   getCategoryIcon(categoryName: string): string {

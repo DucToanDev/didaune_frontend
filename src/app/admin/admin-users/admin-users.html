@@ -1,4 +1,4 @@
-<div class="admin-page">
+﻿<div class="admin-page">
   <app-admin-header title="Quản lý người dùng" breadcrumb="Người dùng">
     <button (click)="openCreate()" class="btn-primary">
       <i class="fa-solid fa-user-plus"></i> Thêm mới
@@ -13,7 +13,6 @@
       <h2 class="card-title">Danh sách ({{ pagination().total }})</h2>
     </div>
 
-    <!-- Filters -->
     <div class="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <div class="filter-group">
         <label class="filter-label">Tìm kiếm</label>
@@ -23,7 +22,7 @@
         <label class="filter-label">Vai trò</label>
         <select [ngModel]="roleFilter()" (ngModelChange)="roleFilter.set($event); loadData(1)" class="filter-input">
           <option value="">Tất cả</option>
-          <option value="admin">quản trị viên</option>
+          <option value="admin">Quản trị viên</option>
           <option value="user">Người dùng</option>
           <option value="owner">Chủ sở hữu</option>
         </select>
@@ -62,7 +61,6 @@
       </div>
     </div>
 
-    <!-- Table -->
     <div class="overflow-x-auto">
       <table class="data-table">
         <thead>
@@ -74,7 +72,6 @@
             <th>Email</th>
             <th>Vai trò</th>
             <th>Trạng thái</th>
-            <th>Xác minh</th>
             <th>Điểm</th>
             <th>Thao tác</th>
           </tr>
@@ -107,11 +104,6 @@
               <span class="status-dot" [class]="user.is_active ? 'active' : 'inactive'"></span>
               {{ user.is_active ? 'Hoạt động' : 'Không hoạt động' }}
             </td>
-            <td>
-              <span class="verify-badge" [class.verify-badge--ok]="user.email_verified_at" [class.verify-badge--pending]="!user.email_verified_at">
-                {{ user.email_verified_at ? 'Đã xác minh' : 'Đang chờ' }}
-              </span>
-            </td>
             <td class="text-sm font-semibold text-slate-700">{{ user.points }}</td>
             <td>
               <div class="flex gap-1">
@@ -124,7 +116,6 @@
       </table>
     </div>
 
-    <!-- Pagination -->
     <div class="mt-4 flex items-center justify-between">
       <p class="text-xs text-slate-400">Trang {{ pagination().current_page }} / {{ pagination().last_page }}</p>
       <div class="flex gap-1">
@@ -134,7 +125,6 @@
     </div>
   </div>
 
-  <!-- Modal -->
   <div *ngIf="showModal()" class="modal-overlay" (click)="closeModal()">
     <div class="modal-panel" (click)="$event.stopPropagation()">
       <div class="flex items-center justify-between mb-5">
@@ -142,7 +132,6 @@
         <button (click)="closeModal()" class="action-btn"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <!-- General Error Alert -->
       <div *ngIf="generalError()" class="mb-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-600">
         <div class="flex gap-2">
           <i class="fa-solid fa-circle-exclamation mt-0.5"></i>

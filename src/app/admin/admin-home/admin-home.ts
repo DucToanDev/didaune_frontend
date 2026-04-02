@@ -1,11 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { forkJoin, catchError, of } from 'rxjs';
-import { LocationApiService } from '../../core/services/location-api.service';
-import { ItineraryApiService, AdminItinerary } from '../../core/services/itinerary-api.service';
-import { UserApiService, AdminUser } from '../../core/services/user-api.service';
+import { catchError, forkJoin, of } from 'rxjs';
 import { Place } from '../../core/models/app.models';
+import {
+  ItineraryApiService,
+  AdminItinerary,
+} from '../../core/services/itinerary-api.service';
+import { LocationApiService } from '../../core/services/location-api.service';
+import { UserApiService, AdminUser } from '../../core/services/user-api.service';
 import { AdminHeader } from '../shared/admin-header/admin-header';
 import { MetricCard } from '../shared/metric-card/metric-card';
 
@@ -62,9 +65,30 @@ export class AdminHome implements OnInit {
   ]);
 
   readonly quickLinks = [
-    { label: 'Quản lý địa điểm', note: 'CRUD, import JSON, filter', icon: 'fa-location-dot', route: '/admin/locations' },
-    { label: 'Lịch trình AI', note: 'Tạo, xem, xóa lịch trình', icon: 'fa-route', route: '/admin/itineraries' },
-    { label: 'Người dùng', note: 'CRUD, phân quyền, trạng thái', icon: 'fa-users', route: '/admin/users' },
+    {
+      label: 'Quản lý địa điểm',
+      note: 'CRUD, import JSON, filter',
+      icon: 'fa-location-dot',
+      route: '/admin/locations',
+    },
+    {
+      label: 'Đóng góp địa điểm',
+      note: 'Duyệt ảnh, duyệt nội dung, cập nhật trạng thái',
+      icon: 'fa-square-plus',
+      route: '/admin/location-submissions',
+    },
+    {
+      label: 'Lịch trình AI',
+      note: 'Tạo, xem, xóa lịch trình',
+      icon: 'fa-route',
+      route: '/admin/itineraries',
+    },
+    {
+      label: 'Người dùng',
+      note: 'CRUD, phân quyền, trạng thái',
+      icon: 'fa-users',
+      route: '/admin/users',
+    },
   ];
 
   ngOnInit() {
@@ -75,9 +99,13 @@ export class AdminHome implements OnInit {
     this.loading.set(true);
 
     forkJoin({
-      locations: this.locationApi.fetchLocationsPaginated({ cityId: 'hcm', perPage: 1 }).pipe(catchError(() => of(null))),
+      locations: this.locationApi
+        .fetchLocationsPaginated({ cityId: 'hcm', perPage: 1 })
+        .pipe(catchError(() => of(null))),
       trending: this.locationApi.fetchTrendingLocations().pipe(catchError(() => of([]))),
-      itineraries: this.itineraryApi.fetchItinerariesPaginated(1, 5).pipe(catchError(() => of(null))),
+      itineraries: this.itineraryApi
+        .fetchItinerariesPaginated(1, 5)
+        .pipe(catchError(() => of(null))),
       users: this.userApi.fetchUsersPaginated({ perPage: 5 }).pipe(catchError(() => of(null))),
     }).subscribe({
       next: (result) => {

@@ -3,19 +3,21 @@
 </header>
 <div class="flex min-h-screen pt-20">
   <div
-    *ngIf="dataService.mobileSidebarOpen()"
     class="fixed inset-0 z-[95] bg-slate-900/40 backdrop-blur-[1px] md:hidden"
+    [class.hidden]="!mobileSidebarOpen()"
+    [attr.aria-hidden]="!mobileSidebarOpen()"
     (click)="closeMobileSidebar()"></div>
   <button
-    *ngIf="dataService.mobileSidebarOpen()"
     type="button"
     (click)="closeMobileSidebar()"
+    [class.hidden]="!mobileSidebarOpen()"
+    [attr.aria-hidden]="!mobileSidebarOpen()"
     class="fixed right-4 top-4 z-[97] flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow-lg md:hidden">
     <i class="fa-solid fa-xmark"></i>
   </button>
   <aside
     class="fixed bottom-0 left-0 top-0 z-[96] max-w-72 -translate-x-full overflow-y-auto bg-white transition-transform duration-200 md:hidden"
-    [class.translate-x-0]="dataService.mobileSidebarOpen()">
+    [class.translate-x-0]="mobileSidebarOpen()">
     <app-aside></app-aside>
   </aside>
   <aside

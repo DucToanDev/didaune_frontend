@@ -19,6 +19,14 @@ export const adminRoutes: Routes = [
         title: 'Quản lý địa điểm — Admin',
       },
       {
+        path: 'location-submissions',
+        loadComponent: () =>
+          import('./admin-location-submissions/admin-location-submissions').then(
+            (m) => m.AdminLocationSubmissions,
+          ),
+        title: 'Đóng góp địa điểm — Admin',
+      },
+      {
         path: 'itineraries',
         loadComponent: () =>
           import('./admin-itineraries/admin-itineraries').then((m) => m.AdminItineraries),

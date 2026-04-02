@@ -97,10 +97,10 @@ export class Planner implements AfterViewInit, OnDestroy {
   readonly itineraryId = signal<number | null>(null);
   readonly isCreateMode = computed(() => this.itineraryId() === null);
   readonly pageHeading = computed(() =>
-    this.isCreateMode() ? 'Táº¡o lá»‹ch trÃ¬nh' : 'Chá»‰nh sá»­a chuyáº¿n Ä‘i',
+    this.isCreateMode() ? 'Tạo lịch trình' : 'Chỉnh sửa chuyến đi',
   );
   readonly saveLabel = computed(() =>
-    this.isCreateMode() ? 'Táº¡o chuyáº¿n Ä‘i' : 'LÆ°u chuyáº¿n Ä‘i',
+    this.isCreateMode() ? 'Tạo chuyến đi' : 'Lưu chuyến đi',
   );
   loadingItinerary = signal(false);
   saving = signal(false);
@@ -132,7 +132,7 @@ export class Planner implements AfterViewInit, OnDestroy {
   dateRangeLabel = computed(() => {
     const start = this.startDate();
     const end = this.endDate();
-    if (!start && !end) return 'Chá»n khoáº£ng ngÃ y cho chuyáº¿n Ä‘i';
+    if (!start && !end) return 'Chọn khoảng ngày cho chuyến đi';
     if (start && !end) return this.formatDisplayDate(start);
     return `${this.formatDisplayDate(start)} - ${this.formatDisplayDate(end)}`;
   });
@@ -148,7 +148,7 @@ export class Planner implements AfterViewInit, OnDestroy {
     this.availableDays().forEach((dayNumber) => {
       grouped.set(dayNumber, {
         dayNumber,
-        label: `NgÃ y ${dayNumber}`,
+        label: `Ngày ${dayNumber}`,
         stops: [],
       });
     });
@@ -200,7 +200,7 @@ export class Planner implements AfterViewInit, OnDestroy {
       return null;
     }
 
-    const name = currentUser.name?.trim() || currentUser.email?.trim() || 'Ban';
+    const name = currentUser.name?.trim() || currentUser.email?.trim() || 'Bạn';
     return {
       id: currentUser.email?.trim().toLowerCase() || String(parsedId),
       name,
@@ -342,7 +342,7 @@ export class Planner implements AfterViewInit, OnDestroy {
   sendInvite() {
     const email = this.inviteEmail().trim().toLowerCase();
     if (!email) {
-      this.toast.warning('Vui lÃ²ng nháº­p email báº¡n Ä‘á»“ng hÃ nh.');
+      this.toast.warning('Vui lòng nhập email bạn đồng hành.');
       return;
     }
 
@@ -352,12 +352,12 @@ export class Planner implements AfterViewInit, OnDestroy {
 
     const currentUser = this.dataService.currentUser();
     if (currentUser.email?.trim().toLowerCase() === email) {
-      this.toast.warning('KhÃ´ng thá»ƒ thÃªm chÃ­nh báº¡n báº±ng email nÃ y.');
+      this.toast.warning('Không thể thêm chính bạn bằng email này.');
       return;
     }
 
     if (this.members().some((member) => member.id === email)) {
-      this.toast.warning('Báº¡n Ä‘á»“ng hÃ nh nÃ y Ä‘Ã£ cÃ³ trong lá»‹ch trÃ¬nh.');
+      this.toast.warning('Bạn đồng hành này đã có trong lịch trình.');
       return;
     }
 
@@ -386,7 +386,7 @@ export class Planner implements AfterViewInit, OnDestroy {
         );
 
         if (!matchedUser) {
-          this.toast.error('Email nÃ y khÃ´ng tá»“n táº¡i trong há»‡ thá»‘ng.');
+          this.toast.error('Email này không tồn tại trong hệ thống.');
           return;
         }
 
@@ -412,14 +412,14 @@ export class Planner implements AfterViewInit, OnDestroy {
             },
           ]),
         ]);
-        this.toast.success('ÄÃ£ thÃªm báº¡n Ä‘á»“ng hÃ nh.');
+        this.toast.success('Đã thêm bạn đồng hành.');
         this.closeInviteModal();
       });
   }
 
   removeMember(memberId: string) {
     if (this.isOwnerMember(memberId)) {
-      this.toast.warning('KhÃ´ng thá»ƒ xÃ³a ngÆ°á»i táº¡o lá»‹ch trÃ¬nh.');
+      this.toast.warning('Không thể xóa người tạo lịch trình.');
       return;
     }
 
@@ -428,7 +428,7 @@ export class Planner implements AfterViewInit, OnDestroy {
         members.filter((member) => member.id.trim().toLowerCase() !== memberId.trim().toLowerCase()),
       ),
     );
-    this.toast.success('ÄÃ£ xÃ³a báº¡n Ä‘á»“ng hÃ nh.');
+    this.toast.success('Đã xóa bạn đồng hành.');
   }
 
   // -- Search Place Modal --
@@ -535,8 +535,8 @@ export class Planner implements AfterViewInit, OnDestroy {
       ...stops,
       {
         id: Math.random().toString(36).slice(2, 10),
-        name: 'Äiá»ƒm dá»«ng má»›i',
-        district: 'ThÃªm khu vá»±c',
+        name: 'Điểm dừng mới',
+        district: 'Thêm khu vực',
         image:
           'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=300',
         startTime: '10:00',
@@ -831,7 +831,7 @@ export class Planner implements AfterViewInit, OnDestroy {
   }
 
   getDayLabel(dayNumber: number): string {
-    return `NgÃ y ${dayNumber}`;
+    return `Ngày ${dayNumber}`;
   }
 
   getTravelMinutesForIndex(index: number): number | null {

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { DataService } from './core/services/data.service';
 import { AnalyticsService } from './core/services/analytics.service';
@@ -14,12 +14,17 @@ export class App implements OnInit {
   private dataService = inject(DataService);
   private analytics = inject(AnalyticsService);
   private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
   private locationPromptStorageKey = 'didaune_location_prompted';
+  private lastUserRefreshAt = 0;
+  private userRefreshCooldownMs = 5000;
   protected readonly title = signal('frontend');
 
   ngOnInit(): void {
     this.requestLocationOnEntry();
     this.trackPageViews();
+    this.refreshCurrentUserSession();
+    this.syncCurrentUserOnFocus();
   }
 
   private trackPageViews() {
@@ -67,5 +72,41 @@ export class App implements OnInit {
         maximumAge: 300000,
       }
     );
+  }
+
+  private refreshCurrentUserSession(force = false) {
+    if (!this.dataService.isAuthenticated()) {
+      return;
+    }
+
+    const now = Date.now();
+    if (!force && now - this.lastUserRefreshAt < this.userRefreshCooldownMs) {
+      return;
+    }
+
+    this.lastUserRefreshAt = now;
+    this.dataService.refreshCurrentUser().subscribe();
+  }
+
+  private syncCurrentUserOnFocus() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
+
+    const refreshCurrentUser = () => {
+      if (document.visibilityState === 'hidden') {
+        return;
+      }
+
+      this.refreshCurrentUserSession();
+    };
+
+    window.addEventListener('focus', refreshCurrentUser);
+    document.addEventListener('visibilitychange', refreshCurrentUser);
+
+    this.destroyRef.onDestroy(() => {
+      window.removeEventListener('focus', refreshCurrentUser);
+      document.removeEventListener('visibilitychange', refreshCurrentUser);
+    });
   }
 }

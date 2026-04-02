@@ -5,6 +5,7 @@
 
 /* ── topbar (mobile) ── */
 .admin-topbar { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: #fff; border-bottom: 1px solid #e2e8f0; }
+@media (min-width: 1280px) { .admin-topbar { display: none; } }
 .topbar-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; border: none; background: #f1f5f9; color: #475569; cursor: pointer; font-size: 15px; transition: background 150ms; }
 .topbar-btn:hover { background: #e2e8f0; }
 .topbar-brand img { height: 32px; width: auto; }
@@ -20,7 +21,7 @@
 
 /* desktop sidebar */
 .admin-layout { display: flex; min-height: 100vh; }
-.admin-layout > .sidebar { position: sticky; top: 0; height: 100vh; width: var(--sidebar-w); flex-shrink: 0; }
+.admin-layout > .sidebar { position: sticky; top: 0; height: 100vh; width: var(--sidebar-w); flex-shrink: 0; z-index: 60; }
 .admin-layout > .sidebar.sidebar--collapsed { width: var(--sidebar-collapsed-w); }
 
 .sidebar-head { display: flex; align-items: center; justify-content: space-between; padding: 20px 16px 16px; border-bottom: 1px solid rgba(255,255,255,.06); }

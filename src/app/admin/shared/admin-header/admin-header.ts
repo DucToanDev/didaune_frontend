@@ -9,11 +9,11 @@ import { RouterModule } from '@angular/router';
   template: `
     <div class="admin-page-header">
       <div class="aph-left">
-        <div class="aph-crumbs">
+        <!-- <div class="aph-crumbs">
           <a routerLink="/admin" class="aph-crumb-link">Admin</a>
           <i *ngIf="breadcrumb()" class="fa-solid fa-chevron-right aph-crumb-sep"></i>
           <span *ngIf="breadcrumb()" class="aph-crumb-current">{{ breadcrumb() }}</span>
-        </div>
+        </div> -->
         <h1 class="aph-title">{{ title() }}</h1>
       </div>
       <div class="aph-actions">

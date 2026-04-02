@@ -16,6 +16,7 @@ import { DragScrollDirective } from '../../shared/ui/drag-scroll.directive';
 import { calculateDistanceKm } from '../../core/utils/geo.utils';
 import { getSuggestedHours } from '../../core/utils/place-display.utils';
 import { PlaceGridCardComponent } from '../../shared/ui/place-grid-card/place-grid-card';
+import { SEO_CONFIG } from '../../core/config/seo.config';
 
 @Component({
   selector: 'app-home',
@@ -168,11 +169,11 @@ export class Home implements OnInit {
         '@context': 'https://schema.org',
         '@type': 'WebSite',
         name: 'DiDauNe',
-        url: 'https://deedee-unfoolable-tanika.ngrok-free.dev/',
+        url: SEO_CONFIG.siteUrl,
         potentialAction: {
           '@type': 'SearchAction',
           target:
-            'https://deedee-unfoolable-tanika.ngrok-free.dev/discover?q={search_term_string}',
+            `${SEO_CONFIG.siteUrl}/discover?q={search_term_string}`,
           'query-input': 'required name=search_term_string',
         },
       },

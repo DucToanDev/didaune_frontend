@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Place } from '../../core/models/app.models';
 import { DataService } from '../../core/services/data.service';
+import { SeoService } from '../../core/services/seo.service';
 
 @Component({
   selector: 'app-reviews',
@@ -16,20 +17,21 @@ export class Reviews {
   private readonly reviewDraftStoragePrefix = 'didaune-review-draft-';
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private seo = inject(SeoService);
   public dataService = inject(DataService);
 
   place = signal<Place | undefined>(undefined);
   rating = signal(5);
   comment = signal('');
-  selectedTags = signal<string[]>(['Wifi tot']);
+  selectedTags = signal<string[]>(['Wifi tốt']);
 
   quickTags = [
-    'Wifi tot',
-    'Yen tinh',
-    'Nuoc ngon',
-    'View dep',
-    'Nhac hay',
-    'Phu hop hen ho',
+    'Wifi tốt',
+    'Yên tĩnh',
+    'Nước ngon',
+    'View đẹp',
+    'Nhạc hay',
+    'Phù hợp hẹn hò',
   ];
 
   constructor() {
@@ -41,7 +43,18 @@ export class Reviews {
       }
 
       this.restoreDraft(slug);
-      this.dataService.getPlaceBySlug(slug).subscribe((place) => this.place.set(place));
+      this.dataService.getPlaceBySlug(slug).subscribe((place) => {
+        this.place.set(place);
+        if (place) {
+          this.seo.setPage({
+            title: `Đánh giá ${place.name}`,
+            description: `Đánh giá và chia sẻ trải nghiệm tại ${place.name}, ${place.district_name}.`,
+            path: `/reviews/${place.slug}`,
+            image: place.image,
+            noindex: true,
+          });
+        }
+      });
     });
   }
 
@@ -78,7 +91,7 @@ export class Reviews {
     this.dataService.submitReview({
       place_slug: place.slug,
       rating: this.rating(),
-      comment: content || 'Trai nghiem tot, minh muon quay lai.',
+      comment: content || 'Trải nghiệm tốt, mình muốn quay lại.',
       images: [],
     });
 

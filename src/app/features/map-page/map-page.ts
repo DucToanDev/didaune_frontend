@@ -16,6 +16,7 @@ import { Place } from '../../core/models/app.models';
 import { CATEGORY_CONFIG } from '../../core/config/place-taxonomy.config';
 import { DataService } from '../../core/services/data.service';
 import { calculateDistanceKm } from '../../core/utils/geo.utils';
+import { SeoService } from '../../core/services/seo.service';
 
 declare global {
   interface Window {
@@ -144,6 +145,7 @@ export class MapPage implements AfterViewInit {
   private destroyRef = inject(DestroyRef);
   private router = inject(Router);
   public dataService = inject(DataService);
+  private seo = inject(SeoService);
 
   @ViewChild('mapContainer') mapContainer?: ElementRef<HTMLDivElement>;
 
@@ -370,6 +372,12 @@ export class MapPage implements AfterViewInit {
   });
 
   constructor() {
+    this.seo.setPage({
+      title: 'Bản đồ địa điểm',
+      description: 'Xem bản đồ địa điểm và tìm nhanh theo danh mục.',
+      path: '/map',
+    });
+
     this.dataService.getPlaces().subscribe((places) => this.places.set(places));
 
     effect(() => {

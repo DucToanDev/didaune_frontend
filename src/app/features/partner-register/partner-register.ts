@@ -8,6 +8,7 @@ import {
   OwnerLocationSubmissionPayload,
 } from '../../core/services/location-api.service';
 import { ToastService } from '../../core/services/toast.service';
+import { SeoService } from '../../core/services/seo.service';
 
 type CategoryId = OwnerLocationSubmissionPayload['category'];
 
@@ -32,6 +33,7 @@ export class PartnerRegister {
   private route = inject(ActivatedRoute);
   private dataService = inject(DataService);
   private toast = inject(ToastService);
+  private seo = inject(SeoService);
 
   submitting = signal(false);
   submitted = signal(false);
@@ -65,6 +67,13 @@ export class PartnerRegister {
   });
 
   constructor() {
+    this.seo.setPage({
+      title: 'Dong gop dia diem',
+      description: 'Gui thong tin dia diem de duoc duyet.',
+      path: '/partner/register',
+      noindex: true,
+    });
+
     const initialName = this.route.snapshot.queryParamMap.get('name') ?? '';
     const initialCategory =
       this.route.snapshot.queryParamMap.get('category') ?? 'cafe';
@@ -113,7 +122,9 @@ export class PartnerRegister {
     if (files.length > this.maxGalleryImages) {
       input.value = '';
       this.galleryImageFiles.set([]);
-      this.toast.warning(`Chỉ được tải tối đa ${this.maxGalleryImages} ảnh thumbnail.`);
+      this.toast.warning(
+        `Chỉ được tải tối đa ${this.maxGalleryImages} ảnh thumbnail.`,
+      );
       return;
     }
 
@@ -122,7 +133,9 @@ export class PartnerRegister {
     if (invalidFile) {
       input.value = '';
       this.galleryImageFiles.set([]);
-      this.toast.warning(this.validateImageFile(invalidFile) ?? 'Ảnh không hợp lệ.');
+      this.toast.warning(
+        this.validateImageFile(invalidFile) ?? 'Ảnh không hợp lệ.',
+      );
       return;
     }
 
@@ -146,7 +159,9 @@ export class PartnerRegister {
     }
 
     if (this.galleryImageFiles().length > this.maxGalleryImages) {
-      this.toast.warning(`Chỉ được tải tối đa ${this.maxGalleryImages} ảnh thumbnail.`);
+      this.toast.warning(
+        `Chỉ được tải tối đa ${this.maxGalleryImages} ảnh thumbnail.`,
+      );
       return;
     }
 
@@ -249,7 +264,9 @@ export class PartnerRegister {
     }
 
     if (this.galleryImageFiles().length > this.maxGalleryImages) {
-      this.toast.warning(`Chỉ được tải tối đa ${this.maxGalleryImages} ảnh thumbnail.`);
+      this.toast.warning(
+        `Chỉ được tải tối đa ${this.maxGalleryImages} ảnh thumbnail.`,
+      );
       return;
     }
 
@@ -318,7 +335,8 @@ export class PartnerRegister {
 
     const translations: Record<string, string> = {
       'The given data was invalid.': 'Dữ liệu không hợp lệ.',
-      'The website must be a valid URL.': 'Website phải là một đường dẫn hợp lệ.',
+      'The website must be a valid URL.':
+        'Website phải là một đường dẫn hợp lệ.',
       'The google maps link must be a valid URL.':
         'Link Google Maps phải là một đường dẫn hợp lệ.',
     };

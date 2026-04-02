@@ -5,6 +5,7 @@ import { Place, PlaceAmenityOption, PlaceReview } from '../../core/models/app.mo
 import { DataService } from '../../core/services/data.service';
 import { SeoService } from '../../core/services/seo.service';
 import { ImageLightbox } from '../../shared/ui/image-lightbox/image-lightbox';
+import { SEO_CONFIG } from '../../core/config/seo.config';
 
 @Component({
   selector: 'app-detail',
@@ -73,11 +74,11 @@ export class Detail {
 
     const facts = [
       p.hotel_stars ? `${p.hotel_stars} sao` : null,
-      p.bedrooms ? `${p.bedrooms} phong ngu` : null,
-      p.beds ? `${p.beds} giuong` : null,
-      p.bathrooms ? `${p.bathrooms} phong tam` : null,
-      p.sleeps ? `${p.sleeps} khach` : null,
-      p.min_nights ? `Toi thieu ${p.min_nights} dem` : null,
+      p.bedrooms ? `${p.bedrooms} phòng ngủ` : null,
+      p.beds ? `${p.beds} giường` : null,
+      p.bathrooms ? `${p.bathrooms} phòng tắm` : null,
+      p.sleeps ? `${p.sleeps} khách` : null,
+      p.min_nights ? `Tối thiểu ${p.min_nights} đêm` : null,
     ].filter((item): item is string => Boolean(item));
 
     return facts;
@@ -153,7 +154,7 @@ export class Detail {
                 }
               : undefined,
             telephone: place.phone || undefined,
-            url: `https://deedee-unfoolable-tanika.ngrok-free.dev/detail/${place.slug}`,
+            url: `${SEO_CONFIG.siteUrl}/detail/${place.slug}`,
           },
         });
 

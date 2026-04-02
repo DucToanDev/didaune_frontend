@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 
@@ -10,6 +10,7 @@ import { SelectModule } from 'primeng/select';
 import { ToastModule } from 'primeng/toast';
 import { CardModule } from 'primeng/card';
 import { MessageService } from 'primeng/api';
+import { SeoService } from '../../core/services/seo.service';
 
 interface TopicOption {
   label: string;
@@ -33,7 +34,7 @@ interface TopicOption {
   templateUrl: './contact.html',
   styleUrl: './contact.css',
 })
-export class Contact {
+export class Contact implements OnInit {
   private fb = new FormBuilder();
 
   submitting = signal(false);
@@ -54,7 +55,15 @@ export class Contact {
     message: ['', [Validators.required, Validators.minLength(10)]],
   });
 
-  constructor(private messageService: MessageService) {}
+  constructor(private messageService: MessageService, private seo: SeoService) {}
+
+  ngOnInit() {
+    this.seo.setPage({
+      title: 'Liên hệ',
+      description: 'Gửi thông tin liên hệ hoặc phản hồi cho DiDauNe.',
+      path: '/contact',
+    });
+  }
 
   get name() { return this.form.get('name')!; }
   get email() { return this.form.get('email')!; }

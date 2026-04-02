@@ -20,6 +20,7 @@ import { LocationApiService } from '../../core/services/location-api.service';
 import { DataService } from '../../core/services/data.service';
 import { UserApiService } from '../../core/services/user-api.service';
 import { ToastService } from '../../core/services/toast.service';
+import { SeoService } from '../../core/services/seo.service';
 import { buildUiAvatarUrl } from '../../core/utils/avatar.utils';
 import {
   Subject,
@@ -85,6 +86,7 @@ export class Planner implements AfterViewInit, OnDestroy {
   private itineraryApi = inject(ItineraryApiService);
   private userApi = inject(UserApiService);
   private toast = inject(ToastService);
+  private seo = inject(SeoService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private datePicker: FlatpickrInstance | null = null;
@@ -243,6 +245,13 @@ export class Planner implements AfterViewInit, OnDestroy {
   stops = signal<PlannerStop[]>([]);
 
   constructor() {
+    this.seo.setPage({
+      title: 'Tạo lịch trình',
+      description: 'Tạo và quản lý lịch trình thủ công.',
+      path: '/planner/new/manual',
+      noindex: true,
+    });
+
     const routeId = this.route.snapshot.paramMap.get('id');
     this.itineraryId.set(routeId ? Number(routeId) : null);
 

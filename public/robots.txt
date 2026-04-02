@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /admin
 
-Sitemap: http://didaune.top/sitemap.xml
+Sitemap: https://didaune.top/sitemap.xml

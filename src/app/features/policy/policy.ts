@@ -20,4 +20,29 @@ export class Policy implements OnInit {
       path: '/policy',
     });
   }
+
+  downloadPolicyPdf() {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.print();
+  }
+
+  scrollToSection(sectionId: string) {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    const section = document.getElementById(sectionId);
+
+    if (!section) {
+      return;
+    }
+
+    section.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  }
 }

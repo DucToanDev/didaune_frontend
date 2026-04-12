@@ -1,0 +1,81 @@
+<div class="admin-page">
+  <app-admin-header title="Settings" breadcrumb="Settings">
+    <button (click)="loadData()" class="btn-outline">
+      <i [class]="loading() ? 'fa-solid fa-spinner animate-spin' : 'fa-solid fa-arrows-rotate'"></i>
+      Lam moi
+    </button>
+    <button (click)="save()" [disabled]="saving() || loading()" class="btn-primary">
+      <i [class]="saving() ? 'fa-solid fa-spinner animate-spin' : 'fa-solid fa-floppy-disk'"></i>
+      {{ saving() ? 'Dang luu...' : 'Luu settings' }}
+    </button>
+  </app-admin-header>
+
+  <div class="overview-card">
+    <div>
+      <p class="overview-label">Tong so key</p>
+      <h2>{{ fieldCount() }}</h2>
+    </div>
+    <div>
+      <p class="overview-label">Nhom cau hinh</p>
+      <h2>{{ groups().length }}</h2>
+    </div>
+  </div>
+
+  <div *ngIf="error()" class="alert alert-error">
+    <i class="fa-solid fa-circle-exclamation"></i>
+    <span>{{ error() }}</span>
+  </div>
+
+  <div *ngIf="success()" class="alert alert-success">
+    <i class="fa-solid fa-circle-check"></i>
+    <span>{{ success() }}</span>
+  </div>
+
+  <div *ngIf="loading()" class="state-card">
+    <i class="fa-solid fa-spinner animate-spin"></i>
+    <span>Dang tai settings...</span>
+  </div>
+
+  <div *ngIf="!loading()" class="settings-grid">
+    <section class="settings-card" *ngFor="let group of groups()">
+      <div class="card-head">
+        <div>
+          <p class="eyebrow">{{ group.key }}</p>
+          <h3>{{ group.label }}</h3>
+        </div>
+        <span class="count">{{ group.fields.length }} keys</span>
+      </div>
+
+      <p class="description">{{ group.description }}</p>
+
+      <div class="field-list">
+        <div class="field-row" *ngFor="let field of group.fields">
+          <label [for]="field.name">{{ field.label }}</label>
+
+          <div class="input-row">
+            <input
+              [id]="field.name"
+              [type]="inputType(group.key, field.name, field.type, field.sensitive)"
+              [ngModel]="form()[field.name]"
+              (ngModelChange)="updateField(field.name, $event)"
+              [placeholder]="field.name"
+              autocomplete="off"
+              spellcheck="false"
+            />
+
+            <button
+              *ngIf="field.sensitive"
+              type="button"
+              class="toggle-btn"
+              (click)="toggleFieldVisibility(group.key + ':' + field.name)"
+            >
+              {{ visibleFields()[group.key + ':' + field.name] ? 'An' : 'Hien' }}
+            </button>
+          </div>
+
+          <p class="field-name">{{ field.name }}</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

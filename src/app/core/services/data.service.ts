@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { toObservable } from '@angular/core/rxjs-interop';
 import {
   Observable,
@@ -137,6 +137,7 @@ export class DataService {
   private postLoginRedirectStorageKey = 'didaune_post_login_redirect';
   private adminBypassEmails = ['tranthienvu215@gmail.com'];
   private wardsCache = new Map<string, Observable<Ward[]>>();
+  private refreshCurrentUserBlockedUntil = 0;
 
   currentCityId = signal('hcm');
   currentDistrictId = signal('all');
@@ -665,6 +666,10 @@ export class DataService {
   }
 
   refreshCurrentUser(): Observable<User | null> {
+    if (Date.now() < this.refreshCurrentUserBlockedUntil) {
+      return of(null);
+    }
+
     const currentUser = this.currentUser();
     const userId = Number(currentUser.id);
 
@@ -679,9 +684,13 @@ export class DataService {
     return this.userApi.getUser(userId).pipe(
       map((user) => this.mapBackendUserToUser(user)),
       tap((user) => this.persistCurrentUser(user, false)),
-      catchError((error) => {
+      catchError((error: HttpErrorResponse) => {
         if (error?.status === 401) {
           this.clearAuthSession();
+        }
+        if (error?.status === 429) {
+          this.refreshCurrentUserBlockedUntil =
+            Date.now() + this.getRetryAfterMs(error, 30_000);
         }
 
         return of(null);
@@ -1059,6 +1068,16 @@ export class DataService {
     } catch {
       return null;
     }
+  }
+
+  private getRetryAfterMs(error: HttpErrorResponse, fallbackMs: number): number {
+    const retryAfterHeader = error.headers?.get('Retry-After');
+    const retryAfterSeconds = retryAfterHeader ? Number(retryAfterHeader) : NaN;
+    if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+      return retryAfterSeconds * 1000;
+    }
+
+    return fallbackMs;
   }
 
   private isAdminLikeRole(role: string | null | undefined): boolean {

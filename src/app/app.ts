@@ -17,7 +17,7 @@ export class App implements OnInit {
   private destroyRef = inject(DestroyRef);
   private locationPromptStorageKey = 'didaune_location_prompted';
   private lastUserRefreshAt = 0;
-  private userRefreshCooldownMs = 5000;
+  private userRefreshCooldownMs = 60000;
   protected readonly title = signal('frontend');
 
   ngOnInit(): void {

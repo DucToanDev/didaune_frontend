@@ -1,0 +1,46 @@
+<div class="match-overlay" [@overlayFade] (click)="onOverlayClick($event)">
+  <canvas #confettiCanvas class="confetti-canvas"></canvas>
+
+  <div class="match-content">
+    <div class="match-title-block" [@titlePop]>
+      <span class="match-emoji">🎉</span>
+      <h2 class="match-title">Da co ket qua chung</h2>
+      <p class="match-subtitle">Tat ca thanh vien trong phong deu dong y voi dia diem nay.</p>
+    </div>
+
+    <div class="match-card" [@cardBounce]>
+      <img
+        [src]="matchData().place.image_url"
+        [alt]="matchData().place.name"
+        class="match-card-image" />
+
+      <div class="match-card-overlay"></div>
+
+      <div class="match-card-info">
+        <div class="match-card-badge">
+          <svg viewBox="0 0 24 24" fill="currentColor" class="match-badge-icon"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+          Match thanh cong
+        </div>
+
+        <h3 class="match-card-name">{{ matchData().place.name }}</h3>
+
+        @if (matchData().place.rating) {
+          <div class="match-card-rating">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="match-star-icon"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+            {{ matchData().place.rating }}
+          </div>
+        }
+
+        <p class="match-card-address">
+          <svg viewBox="0 0 24 24" fill="currentColor" class="match-pin-icon"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+          {{ matchData().place.address }}
+        </p>
+      </div>
+    </div>
+
+    <button class="match-close-btn" (click)="onClose()">
+      Tiep tuc quet
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="match-close-icon"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
+</div>

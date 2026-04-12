@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { catchError, of } from 'rxjs';
 import { BACKEND_API_CONFIG } from '../config/backend-api.config';
 import { DataService } from './data.service';
@@ -34,6 +34,9 @@ export class AnalyticsService {
   private sessionStorageKey = 'didaune_session_id';
   private sessionLastSeenStorageKey = 'didaune_session_last_seen_at';
   private sessionTimeoutMs = 30 * 60 * 1000;
+  private analyticsBlockedUntil = 0;
+  private recentEventSentAt = new Map<string, number>();
+  private readonly EVENT_DEDUPE_WINDOW_MS = 1500;
 
   trackPageView(path: string, pageTitle?: string) {
     this.trackEvent('page_view', {
@@ -50,16 +53,45 @@ export class AnalyticsService {
       metadata?: Record<string, unknown>;
     }
   ) {
+    if (Date.now() < this.analyticsBlockedUntil) {
+      return;
+    }
+
     const payload = this.buildPayload(eventName, options);
 
     if (!payload) {
       return;
     }
 
+    const eventKey = `${payload.event_name}|${payload.path || ''}`;
+    const lastSentAt = this.recentEventSentAt.get(eventKey) ?? 0;
+    const now = Date.now();
+    if (now - lastSentAt < this.EVENT_DEDUPE_WINDOW_MS) {
+      return;
+    }
+    this.recentEventSentAt.set(eventKey, now);
+
     this.http
       .post(`${this.apiBaseUrl}/analytics/events`, payload)
-      .pipe(catchError(() => of(null)))
+      .pipe(
+        catchError((err: HttpErrorResponse) => {
+          if (err.status === 429) {
+            this.analyticsBlockedUntil = Date.now() + this.getRetryAfterMs(err);
+          }
+          return of(null);
+        }),
+      )
       .subscribe();
+  }
+
+  private getRetryAfterMs(err: HttpErrorResponse): number {
+    const retryAfterHeader = err.headers?.get('Retry-After');
+    const retryAfterSeconds = retryAfterHeader ? Number(retryAfterHeader) : NaN;
+    if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+      return retryAfterSeconds * 1000;
+    }
+
+    return 30_000;
   }
 
   private buildPayload(

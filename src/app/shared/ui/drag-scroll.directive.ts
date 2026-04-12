@@ -29,6 +29,11 @@ export class DragScrollDirective {
       return;
     }
 
+    if (this.isInteractiveTarget(event.target)) {
+      this.resetDragState();
+      return;
+    }
+
     const element = this.elementRef.nativeElement;
 
     this.isDragging = true;
@@ -81,9 +86,7 @@ export class DragScrollDirective {
       return;
     }
 
-    this.isDragging = false;
-    this.pointerId = null;
-    this.scrollBehavior = 'smooth';
+    this.resetDragState();
   }
 
   @HostListener('click', ['$event'])
@@ -100,5 +103,25 @@ export class DragScrollDirective {
   @HostListener('dragstart', ['$event'])
   protected onDragStart(event: DragEvent): void {
     event.preventDefault();
+  }
+
+  private isInteractiveTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof Element)) {
+      return false;
+    }
+
+    return Boolean(
+      target.closest(
+        'a, button, input, textarea, select, option, label, [role="button"], [data-no-drag-scroll]',
+      ),
+    );
+  }
+
+  private resetDragState(): void {
+    this.isDragging = false;
+    this.pointerId = null;
+    this.dragDistance = 0;
+    this.suppressClick = false;
+    this.scrollBehavior = 'smooth';
   }
 }

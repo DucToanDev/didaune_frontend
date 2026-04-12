@@ -1,5 +1,6 @@
 <a
   [routerLink]="['/detail', place().slug]"
+  (click)="openDetail($event)"
   class="suggested-card group relative flex h-full flex-col gap-3 rounded-[1.35rem] border border-transparent bg-white p-3 shadow-sm transition hover:border-slate-100 hover:shadow-lg sm:gap-4 sm:rounded-3xl sm:p-4">
   <button
     type="button"

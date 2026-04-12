@@ -12,6 +12,7 @@
   "packageManager": "npm@11.9.0",
   "dependencies": {
     "@angular/animations": "21.2.6",
+    "@angular/cdk": "^21.2.5",
     "@angular/common": "21.2.6",
     "@angular/compiler": "21.2.6",
     "@angular/core": "21.2.6",
@@ -21,8 +22,10 @@
     "@primeng/themes": "^21.0.4",
     "cute-alert": "^0.0.3",
     "flatpickr": "^4.6.13",
+    "laravel-echo": "^2.3.3",
     "primeicons": "^7.0.0",
     "primeng": "^21.1.4",
+    "pusher-js": "^8.5.0",
     "rxjs": "~7.8.0",
     "sweetalert2": "^11.26.24",
     "tslib": "^2.3.0"

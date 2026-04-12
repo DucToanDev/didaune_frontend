@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 import { RouterModule } from '@angular/router';
+import { Router } from '@angular/router';
 import { Place } from '../../../core/models/app.models';
 import { getSuggestedHours } from '../../../core/utils/place-display.utils';
 
@@ -14,6 +15,8 @@ import { getSuggestedHours } from '../../../core/utils/place-display.utils';
   },
 })
 export class PlaceGridCardComponent {
+  private router = inject(Router);
+
   place = input.required<Place>();
   isFavorite = input(false);
   categoryLimit = input(1);
@@ -29,5 +32,18 @@ export class PlaceGridCardComponent {
     event.preventDefault();
     event.stopPropagation();
     this.favoriteToggle.emit(this.place().slug);
+  }
+
+  openDetail(event: Event) {
+    const slug = this.place().slug?.trim();
+
+    if (!slug) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
+    event.preventDefault();
+    void this.router.navigate(['/detail', slug]);
   }
 }

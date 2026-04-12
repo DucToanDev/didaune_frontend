@@ -25,6 +25,16 @@
         <i class="fa-solid fa-compass text-lg"></i>
         Khám phá
       </a>
+
+      <a
+        routerLink="/favorite"
+        routerLinkActive="bg-primary_light text-primary"
+        (click)="closeMobileSidebar()"
+        class="group flex cursor-pointer items-center gap-3 rounded-xl px-4 py-3 font-medium text-slate-600 transition hover:bg-slate-50 hover:text-primary">
+        <i class="fa-solid fa-heart text-lg"></i>
+        Yêu thích
+      </a>
+
       <a
         routerLink="/planner"
         (click)="closeMobileSidebar()"
@@ -42,16 +52,40 @@
         Bản đồ
       </a>
       <a
-        routerLink="/favorite"
+        routerLink="/decision"
         (click)="closeMobileSidebar()"
         routerLinkActive="bg-primary_light text-primary"
         class="group flex items-center gap-3 rounded-xl px-4 py-3 font-medium text-slate-600 transition hover:bg-slate-50 hover:text-primary">
-        <i class="fa-solid fa-heart text-lg"></i>
-        Yêu thích
+        <i class="fa-solid fa-box text-lg"></i>
+        Tạo phòng cùng đi
+      </a>
+      <a
+        routerLink="/about"
+        (click)="closeMobileSidebar()"
+        routerLinkActive="bg-primary_light text-primary"
+        class="group flex items-center gap-3 rounded-xl px-4 py-3 font-medium text-slate-600 transition hover:bg-slate-50 hover:text-primary">
+        <i class="fa-solid fa-circle-info text-lg"></i>
+        Đội ngũ
+      </a>
+      <a
+        routerLink="/contact"
+        (click)="closeMobileSidebar()"
+        routerLinkActive="bg-primary_light text-primary"
+        class="group flex items-center gap-3 rounded-xl px-4 py-3 font-medium text-slate-600 transition hover:bg-slate-50 hover:text-primary">
+        <i class="fa-solid fa-address-book text-lg"></i>
+        Liên hệ
+      </a>
+      <a
+        routerLink="/policy"
+        (click)="closeMobileSidebar()"
+        routerLinkActive="bg-primary_light text-primary"
+        class="group flex items-center gap-3 rounded-xl px-4 py-3 font-medium text-slate-600 transition hover:bg-slate-50 hover:text-primary">
+        <i class="fa-solid fa-file-contract text-lg"></i>
+        Chính sách
       </a>
     </nav>
 
-    <div class="mb-8">
+    <!-- <div class="mb-8">
       <h3
         class="mb-4 px-4 text-[12px] font-bold uppercase tracking-widest text-slate-400">
         Danh mục chính
@@ -66,6 +100,6 @@
           {{ category.label }}
         </button>
       </div>
-    </div>
+    </div> -->
   </div>
 </aside>

@@ -299,18 +299,26 @@ export class Home implements OnInit {
   }
 
   exploreActiveCategory() {
+    this.dataService.selectedAmenityId.set('all');
     this.dataService.selectedCategoryId.set(this.selectedHomeCategory());
     this.dataService.searchQuery.set('');
     this.router.navigate(['/discover']);
   }
 
-  onCategoryClick(category: HomeCategorySummary) {
+  onCategoryClick(category: HomeCategorySummary, event?: Event) {
+    event?.preventDefault();
+
     const { categoryId, amenityId, searchQuery } =
       this.resolveDemandCategoryFilters(category);
 
+    this.dataService.currentDistrictId.set('all');
+    this.dataService.currentWardCode.set('');
+    this.dataService.currentWardName.set('');
     this.dataService.selectedCategoryId.set(categoryId);
     this.dataService.selectedAmenityId.set(amenityId);
     this.dataService.searchQuery.set(searchQuery);
+    this.dataService.sortOption.set('popular');
+    void this.router.navigate(['/discover']);
   }
 
   private filterPlacesByHomeCategory(places: Place[]): Place[] {
@@ -496,6 +504,19 @@ export class Home implements OnInit {
 
   toggleFavorite(slug: string) {
     this.dataService.toggleFavorite(slug);
+  }
+
+  openPlaceDetail(place: Place, event?: Event) {
+    const slug = place.slug?.trim();
+
+    if (!slug) {
+      event?.preventDefault();
+      event?.stopPropagation();
+      return;
+    }
+
+    event?.preventDefault();
+    void this.router.navigate(['/detail', slug]);
   }
 
   getSuggestedHours(place: Place): string {

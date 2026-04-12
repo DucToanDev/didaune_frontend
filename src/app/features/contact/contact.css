@@ -1,18 +1,20 @@
-/* Override PrimeNG inputs để match design hệ thống */
 :host ::ng-deep .p-inputtext,
 :host ::ng-deep .p-textarea {
+  width: 100%;
   border-radius: 0.75rem;
   border-color: #e2e8f0;
+  background: #f8fafc;
   font-family: Inter, sans-serif;
   font-size: 0.875rem;
-  padding: 0.625rem 0.875rem;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  padding: 0.75rem 1rem;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
 }
 
 :host ::ng-deep .p-inputtext:focus,
 :host ::ng-deep .p-textarea:focus {
   border-color: #f97316;
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.1);
   outline: none;
 }
 
@@ -24,16 +26,29 @@
 :host ::ng-deep .p-select {
   border-radius: 0.75rem;
   border-color: #e2e8f0;
+  background: #f8fafc;
   font-size: 0.875rem;
+  min-height: 3rem;
 }
 
 :host ::ng-deep .p-select:not(.p-disabled).p-focus {
   border-color: #f97316;
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.1);
 }
 
 :host ::ng-deep .p-select.ng-invalid {
   border-color: #f04438;
+}
+
+:host ::ng-deep .contact-select .p-select-label {
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  color: #334155;
+}
+
+:host ::ng-deep .contact-select .p-select-dropdown {
+  width: 3rem;
+  color: #94a3b8;
 }
 
 :host ::ng-deep .p-button {
@@ -51,6 +66,20 @@
 :host ::ng-deep .p-button:not(.p-button-outlined):hover {
   background-color: #ea580c;
   border-color: #ea580c;
+}
+
+:host ::ng-deep .contact-submit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 1rem;
+  padding: 0.95rem 2rem;
+  font-weight: 700;
+}
+
+:host ::ng-deep .contact-submit-button .p-button-label {
+  font-weight: 700;
 }
 
 :host ::ng-deep .p-toast .p-toast-message {

@@ -14,15 +14,16 @@ export class AdminShell {
   mobileSidebarOpen = signal(false);
 
   readonly menus = [
-    { label: 'Tổng quan', icon: 'fa-solid fa-gauge', route: '/admin' },
-    { label: 'Địa điểm', icon: 'fa-location-dot', route: '/admin/locations' },
+    { label: 'Tong quan', icon: 'fa-gauge', route: '/admin' },
+    { label: 'Dia diem', icon: 'fa-location-dot', route: '/admin/locations' },
     {
-      label: 'Đóng góp địa điểm',
+      label: 'Dong gop dia diem',
       icon: 'fa-square-plus',
       route: '/admin/location-submissions',
     },
-    { label: 'Lịch trình', icon: 'fa-route', route: '/admin/itineraries' },
-    { label: 'Người dùng', icon: 'fa-users', route: '/admin/users' },
+    { label: 'Lich trinh', icon: 'fa-route', route: '/admin/itineraries' },
+    { label: 'Nguoi dung', icon: 'fa-users', route: '/admin/users' },
+    { label: 'Settings', icon: 'fa-gear', route: '/admin/settings' },
   ];
 
   toggleSidebar() {

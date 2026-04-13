@@ -91,7 +91,7 @@ export class About implements OnInit {
       accentBgClass: 'bg-green-500',
       accentTextClass: 'text-green-500',
       accentHoverClass: 'hover:text-green-500 hover:bg-green-50',
-      avatarUrl: 'https://ui-avatars.com/api/?name=Member+3&background=random',
+      avatarUrl: '/assets/images/hoangtuan.jpg',
       links: [
         { icon: 'fa-brands fa-figma', href: '#' },
         { icon: 'fa-brands fa-dribbble', href: '#' },
@@ -104,7 +104,7 @@ export class About implements OnInit {
       accentBgClass: 'bg-green-500',
       accentTextClass: 'text-green-500',
       accentHoverClass: 'hover:text-green-500 hover:bg-green-50',
-      avatarUrl: 'https://ui-avatars.com/api/?name=Member+3&background=random',
+      avatarUrl: '/assets/images/tangtanphuc.jpg',
       links: [
         { icon: 'fa-brands fa-figma', href: '#' },
         { icon: 'fa-brands fa-dribbble', href: '#' },
@@ -112,7 +112,7 @@ export class About implements OnInit {
     },
   ];
 
-  constructor(private seo: SeoService) {}
+  constructor(private seo: SeoService) { }
 
   ngOnInit() {
     this.seo.setPage({

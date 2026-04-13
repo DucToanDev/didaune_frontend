@@ -298,10 +298,10 @@ export class SwipeDeckComponent implements OnInit, OnDestroy {
     event?.stopPropagation();
 
     const result = await this.toast.confirm({
-      title: `Xoa phong ${code}?`,
-      text: 'Phong se bi xoa trong he thong. Cac thanh vien dang trong phong se bi vang ra.',
-      confirmButtonText: 'Xoa phong',
-      cancelButtonText: 'Huy',
+      title: `Xóa phòng ${code}?`,
+      text: 'Phòng sẽ bị xóa khỏi hệ thống. Các thành viên đang trong phòng sẽ bị mời ra.',
+      confirmButtonText: 'Xóa phòng',
+      cancelButtonText: 'Hủy',
       icon: 'warning',
     });
 
@@ -314,10 +314,10 @@ export class SwipeDeckComponent implements OnInit, OnDestroy {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
-          this.toast.success('Da xoa phong.');
+          this.toast.success('Đã xóa phòng.');
         },
         error: (err) => {
-          this.toast.error(err?.message || 'Xoa phong that bai.');
+          this.toast.error(err?.message || 'Xóa phòng thất bại.');
         },
       });
   }
@@ -434,11 +434,11 @@ export class SwipeDeckComponent implements OnInit, OnDestroy {
   }
 
   roomOriginLabel(room: RecentDecisionRoom): string {
-    return room.origin === 'created' ? 'Ban tao' : 'Da tham gia';
+    return room.origin === 'created' ? 'Bạn tạo' : 'Đã tham gia';
   }
 
   roomMembersLabel(count: number): string {
-    return `${count || 1} thanh vien`;
+    return `${count || 1} thành viên`;
   }
 
   roomAvatarSlots(room: RecentDecisionRoom): number[] {
@@ -518,7 +518,7 @@ export class SwipeDeckComponent implements OnInit, OnDestroy {
     const html = `
       <div style="text-align:left;display:grid;gap:12px;margin-top:8px">
         <div>
-          <label for="decision-city" style="display:block;font-weight:700;margin-bottom:6px">Lay dia diem o dau?</label>
+          <label for="decision-city" style="display:block;font-weight:700;margin-bottom:6px">Lấy địa điểm ở đâu?</label>
           <select id="decision-city" class="swal2-input" style="margin:0;width:100%">
             ${cityOptions
               .map(
@@ -529,7 +529,7 @@ export class SwipeDeckComponent implements OnInit, OnDestroy {
           </select>
         </div>
         <div>
-          <p style="font-weight:700;margin:0 0 8px 0">Danh muc nao? (chon nhieu)</p>
+          <p style="font-weight:700;margin:0 0 8px 0">Danh mục nào? (chọn nhiều)</p>
           <div style="max-height:220px;overflow:auto;border:1px solid #e2e8f0;border-radius:12px;padding:10px;display:grid;gap:8px">
             ${categoryOptions
               .map(
@@ -547,11 +547,11 @@ export class SwipeDeckComponent implements OnInit, OnDestroy {
     `;
 
     const result = await Swal.fire<RoomSurveyFilters>({
-      title: 'Khoi tao room',
+      title: 'Khởi tạo phòng mới',
       html,
       showCancelButton: true,
-      confirmButtonText: 'Tao phong',
-      cancelButtonText: 'Huy',
+      confirmButtonText: 'Tạo phòng',
+      cancelButtonText: 'Hủy',
       focusConfirm: false,
       confirmButtonColor: '#ea580c',
       didOpen: () => {
@@ -577,11 +577,11 @@ export class SwipeDeckComponent implements OnInit, OnDestroy {
           .filter((item) => !!item);
 
         if (!cityId) {
-          Swal.showValidationMessage('Vui long chon thanh pho.');
+          Swal.showValidationMessage('Vui lòng chọn thành phố.');
           return undefined;
         }
         if (!categories.length) {
-          Swal.showValidationMessage('Vui long chon it nhat 1 danh muc.');
+          Swal.showValidationMessage('Vui lòng chọn ít nhất 1 danh mục.');
           return undefined;
         }
 
